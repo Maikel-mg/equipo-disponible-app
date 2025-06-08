@@ -1,4 +1,6 @@
 
+import { LeaveRequest } from '@/models/types';
+
 export const LEAVE_TYPES: Array<{
   value: LeaveRequest['type'];
   label: string;
