@@ -87,7 +87,7 @@ export function HolidayManager() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Calendario Laboral
@@ -97,26 +97,30 @@ export function HolidayManager() {
           </p>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            onClick={() => setIsImportOpen(true)}
-            className="hidden sm:flex"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Importar Festivos
-          </Button>
+        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsImportOpen(true)}
+              className="flex-1 sm:flex-none"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Importar Festivos</span>
+              <span className="sm:hidden">Importar</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={handleExportHolidays}
+              className="flex-1 sm:flex-none"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Exportar</span>
+              <span className="sm:hidden">Exportar</span>
+            </Button>
+          </div>
           
-          <Button 
-            variant="outline" 
-            onClick={handleExportHolidays}
-            className="hidden sm:flex"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button onClick={() => setIsFormOpen(true)} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Festivo
           </Button>
