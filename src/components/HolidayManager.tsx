@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useHolidays } from '@/hooks/useHolidays';
 import { useAuth } from '@/contexts/AuthContext';
