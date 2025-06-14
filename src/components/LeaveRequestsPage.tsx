@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
@@ -81,7 +80,7 @@ function LeaveRequestForm({ onSubmit, onClose }: { onSubmit: (data: any) => void
 
 // Main
 export function LeaveRequestsPage() {
-  const { user } = useAuth();
+  const { user, updateAuthUser } = useAuth();
   const { requests, createRequest, updateRequestStatus, loading } = useLeaveRequests();
   const [showForm, setShowForm] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null); // para loading de aprobar/rechazar
@@ -104,9 +103,17 @@ export function LeaveRequestsPage() {
     setShowForm(false);
   };
 
-  const handleUpdateStatus = async (id: string, status: "aprobada" | "rechazada") => {
-    setActionLoading(id + status);
-    await updateRequestStatus(id, status);
+  const handleUpdateStatus = async (req: LeaveRequest, status: "aprobada" | "rechazada") => {
+    setActionLoading(req.id + status);
+    await updateRequestStatus(req.id, status);
+
+    // Si la solicitud es de vacaciones aprobadas para el usuario actual, actualiza el contexto
+    if (status === 'aprobada' && req.type === 'vacaciones' && user && user.id === req.user_id) {
+      updateAuthUser({
+        vacation_days_balance: user.vacation_days_balance - req.days_count,
+      });
+    }
+    
     setActionLoading(null);
   };
 
@@ -163,7 +170,7 @@ export function LeaveRequestsPage() {
                           size="sm"
                           variant="outline"
                           disabled={actionLoading === req.id + "aprobada"}
-                          onClick={() => handleUpdateStatus(req.id, "aprobada")}
+                          onClick={() => handleUpdateStatus(req, "aprobada")}
                         >
                           <CheckCircle2 className="w-4 h-4 mr-1 text-green-700" />Aprobar
                         </Button>
@@ -171,7 +178,7 @@ export function LeaveRequestsPage() {
                           size="sm"
                           variant="destructive"
                           disabled={actionLoading === req.id + "rechazada"}
-                          onClick={() => handleUpdateStatus(req.id, "rechazada")}
+                          onClick={() => handleUpdateStatus(req, "rechazada")}
                         >
                           <XCircle className="w-4 h-4 mr-1 text-red-700" />Rechazar
                         </Button>

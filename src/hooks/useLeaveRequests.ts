@@ -1,50 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { LeaveRequest } from '@/models/types';
-
-// Mock data para demo
-const mockRequests: LeaveRequest[] = [
-  {
-    id: '1',
-    user_id: '1',
-    user_name: 'María García',
-    type: 'vacaciones',
-    start_date: '2024-07-15',
-    end_date: '2024-07-19',
-    days_count: 5,
-    reason: 'Vacaciones de verano',
-    status: 'pendiente',
-    created_at: '2024-06-08T10:00:00Z',
-  },
-  {
-    id: '2',
-    user_id: '2',
-    user_name: 'Carlos López',
-    type: 'enfermedad',
-    start_date: '2024-06-10',
-    end_date: '2024-06-12',
-    days_count: 3,
-    reason: 'Gripe',
-    status: 'aprobada',
-    reviewed_by: 'Ana Martín',
-    reviewed_at: '2024-06-09T15:30:00Z',
-    created_at: '2024-06-08T08:00:00Z',
-  },
-  {
-    id: '3',
-    user_id: '3',
-    user_name: 'Ana Martín',
-    type: 'personal',
-    start_date: '2024-06-20',
-    end_date: '2024-06-20',
-    days_count: 1,
-    reason: 'Cita médica',
-    status: 'aprobada',
-    reviewed_by: 'RRHH',
-    reviewed_at: '2024-06-08T12:00:00Z',
-    created_at: '2024-06-07T14:00:00Z',
-  },
-];
+import { mockRequests, mockUsers } from '@/data/mockData';
 
 export function useLeaveRequests() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -91,6 +47,11 @@ export function useLeaveRequests() {
     try {
       setLoading(true);
       
+      const requestToUpdate = requests.find(r => r.id === requestId);
+      if (!requestToUpdate) {
+        throw new Error("Solicitud no encontrada");
+      }
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -107,6 +68,15 @@ export function useLeaveRequests() {
             : req
         )
       );
+
+      // Si es una solicitud de vacaciones aprobada, descontar del saldo del usuario.
+      if (status === 'aprobada' && requestToUpdate.type === 'vacaciones') {
+        const userIndex = mockUsers.findIndex(u => u.id === requestToUpdate.user_id);
+        if (userIndex !== -1) {
+          mockUsers[userIndex].vacation_days_balance -= requestToUpdate.days_count;
+        }
+      }
+
     } catch (err) {
       setError('Error al actualizar la solicitud');
       throw err;

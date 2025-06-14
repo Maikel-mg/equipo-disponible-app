@@ -1,37 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/models/types';
+import { mockUsers } from '@/data/mockData';
 
-// Usuarios de ejemplo para demo
-export const MOCK_USERS: User[] = [
-  {
-    id: "1",
-    email: "maria.garcia@email.com",
-    name: "María García",
-    role: "empleado",
-    vacation_days_balance: 12,
-    sick_days_balance: 3,
-    created_at: "2024-06-01T09:00:00Z",
-  },
-  {
-    id: "2",
-    email: "carlos.lopez@email.com",
-    name: "Carlos López",
-    role: "responsable",
-    vacation_days_balance: 20,
-    sick_days_balance: 5,
-    created_at: "2024-05-21T13:00:00Z",
-  },
-  {
-    id: "3",
-    email: "ana.ruiz@email.com",
-    name: "Ana Ruiz",
-    role: "rrhh",
-    vacation_days_balance: 30,
-    sick_days_balance: 15,
-    created_at: "2024-03-08T07:00:00Z",
-  },
-];
+// Usamos los usuarios del mock centralizado
+export const MOCK_USERS: User[] = mockUsers;
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +12,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   setRole: (role: User["role"]) => void;
+  updateAuthUser: (data: Partial<User>) => void;
   mockUsers: User[];
 }
 
@@ -83,6 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const updateAuthUser = (data: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...data } : null);
+  };
+
   const value = {
     user,
     loading,
@@ -90,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     isAuthenticated: !!user,
     setRole,
+    updateAuthUser,
     mockUsers: MOCK_USERS,
   };
 
