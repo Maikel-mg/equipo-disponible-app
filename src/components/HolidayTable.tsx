@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 import { Holiday } from '@/models/types';
@@ -27,15 +28,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface HolidayTableProps {
   holidays: Holiday[];
-  onEdit: (holiday: Holiday) => void;
-  onDelete: (holidayId: string) => void;
+  onEdit?: (holiday: Holiday) => void;
+  onDelete?: (holidayId: string) => void;
   loading?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
   selectedIds?: string[];
-  onDeleteSelected?: (selectedIds: string[]) => void; // NUEVA PROP
+  onDeleteSelected?: (selectedIds: string[]) => void;
 }
 
-// Estados y lógica de selección de filas
 export function HolidayTable({
   holidays,
   onEdit,
@@ -47,18 +47,22 @@ export function HolidayTable({
 }: HolidayTableProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
+  // Solo permitir selección si hay funciones de gestión disponibles
+  const canManage = Boolean(onEdit && onDelete);
+
   useEffect(() => {
     setSelected(selectedIds);
   }, [selectedIds]);
 
   useEffect(() => {
-    if (onSelectionChange) {
+    if (onSelectionChange && canManage) {
       onSelectionChange(selected);
     }
     // eslint-disable-next-line
   }, [selected]);
 
   const toggleSelect = (id: string) => {
+    if (!canManage) return;
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
@@ -66,6 +70,7 @@ export function HolidayTable({
 
   const isAllSelected = holidays.length > 0 && selected.length === holidays.length;
   const toggleSelectAll = () => {
+    if (!canManage) return;
     if (isAllSelected) {
       setSelected([]);
     } else {
@@ -99,7 +104,7 @@ export function HolidayTable({
           No hay festivos configurados
         </h3>
         <p className="text-gray-500">
-          Empieza añadiendo el primer festivo del calendario laboral.
+          {canManage ? 'Empieza añadiendo el primer festivo del calendario laboral.' : 'No hay festivos configurados en el calendario laboral.'}
         </p>
       </div>
     );
@@ -107,62 +112,68 @@ export function HolidayTable({
 
   return (
     <div className="rounded-md border">
-      {/* Barra de acciones cuando hay seleccionados */}
-      <div className={`p-2 border-b bg-slate-50 flex items-center gap-4 ${selected.length > 0 ? '' : 'hidden'}`}>
-        <span className="text-sm text-gray-700 font-medium">
-          {selected.length} seleccionados
-        </span>
-        <Button
-          variant="destructive"
-          size="sm"
-          className="flex items-center gap-2"
-          type="button"
-          onClick={() => {
-            if (onDeleteSelected) {
-              onDeleteSelected(selected);
-            }
-          }}
-        >
-          <Trash2 className="w-4 h-4 mr-1" />
-          Eliminar seleccionados
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-2"
-          type="button"
-          onClick={() => setSelected([])}
-        >
-          Deseleccionar todos
-        </Button>
-      </div>
+      {/* Barra de acciones cuando hay seleccionados - solo para gestores */}
+      {canManage && (
+        <div className={`p-2 border-b bg-slate-50 flex items-center gap-4 ${selected.length > 0 ? '' : 'hidden'}`}>
+          <span className="text-sm text-gray-700 font-medium">
+            {selected.length} seleccionados
+          </span>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="flex items-center gap-2"
+            type="button"
+            onClick={() => {
+              if (onDeleteSelected) {
+                onDeleteSelected(selected);
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Eliminar seleccionados
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-2"
+            type="button"
+            onClick={() => setSelected([])}
+          >
+            Deseleccionar todos
+          </Button>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[32px] px-2">
-              <Checkbox
-                checked={isAllSelected}
-                onCheckedChange={toggleSelectAll}
-                aria-label="Seleccionar todos"
-              />
-            </TableHead>
+            {canManage && (
+              <TableHead className="w-[32px] px-2">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Seleccionar todos"
+                />
+              </TableHead>
+            )}
             <TableHead>Nombre</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Tipo</TableHead>
             <TableHead>Obligatorio</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            {canManage && <TableHead className="w-[50px]"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedHolidays.map((holiday) => (
             <TableRow key={holiday.id} className={selected.includes(holiday.id) ? "bg-blue-50" : ""}>
-              <TableCell className="px-2">
-                <Checkbox
-                  checked={selected.includes(holiday.id)}
-                  onCheckedChange={() => toggleSelect(holiday.id)}
-                  aria-label={`Seleccionar ${holiday.name}`}
-                />
-              </TableCell>
+              {canManage && (
+                <TableCell className="px-2">
+                  <Checkbox
+                    checked={selected.includes(holiday.id)}
+                    onCheckedChange={() => toggleSelect(holiday.id)}
+                    aria-label={`Seleccionar ${holiday.name}`}
+                  />
+                </TableCell>
+              )}
               <TableCell className="font-medium">
                 {holiday.name}
               </TableCell>
@@ -190,28 +201,30 @@ export function HolidayTable({
                   </span>
                 )}
               </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(holiday)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onDelete(holiday.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Eliminar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+              {canManage && (
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEdit && onEdit(holiday)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onDelete && onDelete(holiday.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
