@@ -55,14 +55,18 @@ function UserForm({
     name: initialData?.name || '',
     email: initialData?.email || '',
     role: initialData?.role || 'empleado',
-    team_id: initialData?.team_id || '',
+    team_id: initialData?.team_id || 'no-team',
     vacation_days_balance: initialData?.vacation_days_balance || 22,
     sick_days_balance: initialData?.sick_days_balance || 3,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form);
+    const submitData = {
+      ...form,
+      team_id: form.team_id === 'no-team' ? undefined : form.team_id
+    };
+    onSubmit(submitData);
   };
 
   return (
@@ -110,7 +114,7 @@ function UserForm({
               <SelectValue placeholder="Seleccionar equipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sin equipo</SelectItem>
+              <SelectItem value="no-team">Sin equipo</SelectItem>
               {teams.map((team) => (
                 <SelectItem key={team.id} value={team.id}>
                   {team.name}
