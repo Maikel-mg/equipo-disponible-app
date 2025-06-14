@@ -33,7 +33,7 @@ const App = () => (
               <Route path="/team" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Equipo</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/teams" element={<TeamManagement />} />
-              <Route path="/reports" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Reportes</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
+              <Route path="/reports" element={<MonthlyReport />} />
               <Route path="/settings" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Configuración</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
