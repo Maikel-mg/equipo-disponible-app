@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Holiday } from '@/models/types';
 
-// Mock data para demo
 const mockHolidays: Holiday[] = [
   {
     id: '1',
@@ -42,13 +41,21 @@ const mockHolidays: Holiday[] = [
   },
 ];
 
+function isDuplicate(holidays: Holiday[], data: { name: string; date: string }, skipId?: string) {
+  return holidays.some(
+    h =>
+      h.name.trim().toLowerCase() === data.name.trim().toLowerCase() &&
+      h.date === data.date &&
+      (!skipId || h.id !== skipId)
+  );
+}
+
 export function useHolidays() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
     setTimeout(() => {
       setHolidays(mockHolidays);
       setLoading(false);
@@ -58,21 +65,19 @@ export function useHolidays() {
   const createHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
     try {
       setLoading(true);
-      
+      if (isDuplicate(holidays, holidayData)) {
+        throw new Error("Festivo duplicado");
+      }
       const newHoliday: Holiday = {
         ...holidayData,
         id: Math.random().toString(36).substr(2, 9),
         created_by: 'current-user',
         created_at: new Date().toISOString(),
       };
-
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setHolidays(prev => [...prev, newHoliday].sort((a, b) => 
+      setHolidays(prev => [...prev, newHoliday].sort((a, b) =>
         new Date(a.date).getTime() - new Date(b.date).getTime()
       ));
-      
       return newHoliday;
     } catch (err) {
       setError('Error al crear el día festivo');
@@ -82,13 +87,35 @@ export function useHolidays() {
     }
   };
 
+  const updateHoliday = async (id: string, updated: Omit<Holiday, "id" | "created_at" | "created_by">) => {
+    try {
+      setLoading(true);
+      if (isDuplicate(holidays, updated, id)) {
+        throw new Error("Festivo duplicado");
+      }
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setHolidays(prev =>
+        prev.map(h =>
+          h.id === id
+            ? {
+                ...h,
+                ...updated,
+              }
+            : h
+        )
+      );
+    } catch (err) {
+      setError('Error al actualizar el día festivo');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteHoliday = async (holidayId: string) => {
     try {
       setLoading(true);
-      
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
-      
       setHolidays(prev => prev.filter(holiday => holiday.id !== holidayId));
     } catch (err) {
       setError('Error al eliminar el día festivo');
@@ -103,6 +130,7 @@ export function useHolidays() {
     loading,
     error,
     createHoliday,
+    updateHoliday,
     deleteHoliday,
   };
 }

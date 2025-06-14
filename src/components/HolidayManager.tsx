@@ -7,26 +7,38 @@ import { Button } from '@/components/ui/button';
 import { Plus, Calendar, Download, Upload, Trash2 } from 'lucide-react';
 import { Holiday } from '@/models/types';
 import { useToast } from '@/hooks/use-toast';
+import { exportToCSV, exportToJSON } from '@/utils/exportHolidays';
 
 export function HolidayManager() {
-  const { holidays, loading, createHoliday, deleteHoliday } = useHolidays();
+  const { holidays, loading, createHoliday, updateHoliday, deleteHoliday } = useHolidays();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | undefined>();
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
 
-  const handleCreateHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
+  // NUEVO: Lógica para crear o editar
+  const handleSubmitHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
     try {
-      await createHoliday(holidayData);
-      toast({
-        title: "Festivo creado",
-        description: "El festivo se ha añadido correctamente al calendario.",
-      });
-    } catch (error) {
+      if (editingHoliday) {
+        await updateHoliday(editingHoliday.id, holidayData);
+        toast({
+          title: "Festivo actualizado",
+          description: "El festivo se ha actualizado correctamente.",
+        });
+      } else {
+        await createHoliday(holidayData);
+        toast({
+          title: "Festivo creado",
+          description: "El festivo se ha añadido correctamente al calendario.",
+        });
+      }
+      setIsFormOpen(false);
+      setEditingHoliday(undefined);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "No se pudo crear el festivo. Inténtalo de nuevo.",
+        description: error?.message || "No se pudo guardar el festivo. Inténtalo de nuevo.",
         variant: "destructive",
       });
     }
@@ -34,12 +46,18 @@ export function HolidayManager() {
 
   const handleImportHolidays = async (importedHolidays: Omit<Holiday, 'id' | 'created_at' | 'created_by'>[]) => {
     try {
+      let imported = 0;
       for (const holidayData of importedHolidays) {
-        await createHoliday(holidayData);
+        try {
+          await createHoliday(holidayData);
+          imported++;
+        } catch (e) {
+          // Duplica: ignorado
+        }
       }
       toast({
         title: "Festivos importados",
-        description: `Se han importado ${importedHolidays.length} festivos correctamente.`,
+        description: `Se importaron ${imported} festivos. Duplicados ignorados.`,
       });
     } catch (error) {
       toast({
@@ -99,10 +117,23 @@ export function HolidayManager() {
   };
 
   const handleExportHolidays = () => {
-    // TODO: Implementar exportación de festivos a CSV/JSON
+    if (holidays.length === 0) {
+      toast({
+        title: "Sin festivos",
+        description: "No hay festivos para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Simple dialog para elegir formato
+    if (window.confirm("¿Exportar festivos como CSV? (Cancelar para JSON)")) {
+      exportToCSV(holidays);
+    } else {
+      exportToJSON(holidays);
+    }
     toast({
-      title: "Próximamente", 
-      description: "La funcionalidad de exportación estará disponible pronto.",
+      title: "Exportación lista",
+      description: "Festivos exportados correctamente.",
     });
   };
 
@@ -244,7 +275,7 @@ export function HolidayManager() {
       <HolidayForm
         isOpen={isFormOpen}
         onClose={handleFormClose}
-        onSubmit={handleCreateHoliday}
+        onSubmit={handleSubmitHoliday} // Cambiar a nueva función unificada
         holiday={editingHoliday}
       />
 

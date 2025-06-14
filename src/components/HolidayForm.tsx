@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -89,7 +88,7 @@ export function HolidayForm({ isOpen, onClose, onSubmit, holiday }: HolidayFormP
       type: data.type,
       is_mandatory: data.is_mandatory
     });
-    onClose();
+    // No cerrar aquí. El cierre lo decide HolidayManager tras submit exitoso/error.
   };
 
   return (
