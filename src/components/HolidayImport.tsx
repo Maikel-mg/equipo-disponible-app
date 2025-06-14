@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,12 +72,37 @@ export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps)
       const hd = new Holidays(selectedCountry);
       const holidays = hd.getHolidays(parseInt(selectedYear));
       
-      const importableHolidays: ImportableHoliday[] = holidays.map((holiday: any) => ({
-        name: holiday.name,
-        date: holiday.date.toISOString().split('T')[0],
-        type: holiday.type === 'public' ? 'nacional' : 'local',
-        selected: true,
-      }));
+      console.log('Raw holidays from library:', holidays);
+      
+      const importableHolidays: ImportableHoliday[] = holidays.map((holiday: any) => {
+        // Handle different date formats that the library might return
+        let dateString: string;
+        
+        if (holiday.date instanceof Date) {
+          dateString = holiday.date.toISOString().split('T')[0];
+        } else if (typeof holiday.date === 'string') {
+          dateString = holiday.date.split('T')[0];
+        } else if (holiday.date && typeof holiday.date === 'object') {
+          // If it's an object with date properties, try to construct a date
+          if (holiday.date.year && holiday.date.month && holiday.date.day) {
+            const date = new Date(holiday.date.year, holiday.date.month - 1, holiday.date.day);
+            dateString = date.toISOString().split('T')[0];
+          } else {
+            // Fallback: try to create a Date from the object
+            dateString = new Date(holiday.date).toISOString().split('T')[0];
+          }
+        } else {
+          console.warn('Unknown date format:', holiday.date);
+          dateString = new Date().toISOString().split('T')[0]; // Fallback to today
+        }
+
+        return {
+          name: holiday.name,
+          date: dateString,
+          type: holiday.type === 'public' ? 'nacional' : 'local',
+          selected: true,
+        };
+      });
 
       setAvailableHolidays(importableHolidays);
       
