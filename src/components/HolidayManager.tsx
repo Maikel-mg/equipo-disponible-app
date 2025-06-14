@@ -155,7 +155,7 @@ export function HolidayManager() {
           <span className="text-sm font-medium text-red-800">{selectedHolidays.length} festivos seleccionados</span>
           <Button
             variant="destructive"
-            onClick={handleDeleteSelectedHolidays}
+            onClick={() => handleDeleteSelectedHolidays()}
             className="flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4 mr-1" />
