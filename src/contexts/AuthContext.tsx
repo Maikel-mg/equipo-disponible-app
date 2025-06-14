@@ -5,10 +5,10 @@ import { User } from '@/models/types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (userData: any) => void;
   logout: () => void;
   isAuthenticated: boolean;
-  setRole: (role: User["role"]) => void; // NUEVO
+  setRole: (role: User["role"]) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,56 +25,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock user for demo purposes
+  // Check for existing session on mount
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setUser({
-        id: '1',
-        email: 'usuario@empresa.com',
-        name: 'María García',
-        role: 'empleado',
-        team_id: 'team-1',
-        vacation_days_balance: 23,
-        sick_days_balance: 5,
-        created_at: new Date().toISOString(),
-      });
-      setLoading(false);
-    }, 1000);
+    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // Mock login
-    setLoading(true);
-    setTimeout(() => {
-      setUser({
-        id: '1',
-        email,
-        name: 'María García',
-        role: 'empleado',
-        team_id: 'team-1',
-        vacation_days_balance: 23,
-        sick_days_balance: 5,
-        created_at: new Date().toISOString(),
-      });
-      setLoading(false);
-    }, 1000);
+  const login = (userData: any) => {
+    setUser({
+      ...userData,
+      created_at: new Date().toISOString(),
+    });
   };
 
   const logout = () => {
     setUser(null);
   };
 
-  // NUEVO: cambiar el rol
   const setRole = (role: User['role']) => {
     setUser((prev) =>
       prev
         ? {
             ...prev,
             role,
-            // Mock para RRHH/admin, poner saldo alto
-            vacation_days_balance: role === "rrhh" ? 99 : prev.vacation_days_balance,
-            sick_days_balance: role === "rrhh" ? 99 : prev.sick_days_balance,
+            vacation_days_balance: role === "rrhh" ? 30 : prev.vacation_days_balance,
+            sick_days_balance: role === "rrhh" ? 15 : prev.sick_days_balance,
           }
         : null
     );
@@ -86,9 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     isAuthenticated: !!user,
-    setRole, // añadir al contexto
+    setRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-

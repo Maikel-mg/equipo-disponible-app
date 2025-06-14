@@ -3,18 +3,30 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { RoleSwitcher } from './RoleSwitcher';
+import { LoginScreen } from './LoginScreen';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user } = useAuth();
+  const { user, login, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
-    return <div>{children}</div>;
+    return <LoginScreen onLogin={login} />;
   }
 
   return (
@@ -34,4 +46,3 @@ export function Layout({ children }: LayoutProps) {
     </SidebarProvider>
   );
 }
-
