@@ -207,6 +207,7 @@ export function HolidayManager() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         onImport={handleImportHolidays}
+        existingHolidays={holidays}
       />
     </div>
   );

@@ -28,6 +28,7 @@ interface HolidayImportProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (holidays: Omit<Holiday, 'id' | 'created_at' | 'created_by'>[]) => void;
+  existingHolidays: Holiday[];
 }
 
 interface ImportableHoliday {
@@ -35,6 +36,7 @@ interface ImportableHoliday {
   date: string;
   type: string;
   selected: boolean;
+  exists: boolean;
 }
 
 const COUNTRY_OPTIONS = [
@@ -50,7 +52,7 @@ const COUNTRY_OPTIONS = [
   { value: 'CO', label: 'Colombia' },
 ];
 
-export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps) {
+export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: HolidayImportProps) {
   const { toast } = useToast();
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -96,19 +98,27 @@ export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps)
           dateString = new Date().toISOString().split('T')[0]; // Fallback to today
         }
 
+        // Check if this holiday already exists
+        const exists = existingHolidays.some(existing => 
+          existing.date === dateString && 
+          existing.name.toLowerCase() === holiday.name.toLowerCase()
+        );
+
         return {
           name: holiday.name,
           date: dateString,
           type: holiday.type === 'public' ? 'nacional' : 'local',
-          selected: true,
+          selected: !exists, // Only select if it doesn't exist
+          exists: exists,
         };
       });
 
       setAvailableHolidays(importableHolidays);
       
+      const existingCount = importableHolidays.filter(h => h.exists).length;
       toast({
         title: "Festivos cargados",
-        description: `Se encontraron ${importableHolidays.length} festivos para ${selectedYear}`,
+        description: `Se encontraron ${importableHolidays.length} festivos para ${selectedYear}${existingCount > 0 ? ` (${existingCount} ya existen)` : ''}`,
       });
     } catch (error) {
       console.error('Error fetching holidays:', error);
@@ -123,6 +133,9 @@ export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps)
   };
 
   const toggleHolidaySelection = (index: number) => {
+    const holiday = availableHolidays[index];
+    if (holiday.exists) return; // Don't allow toggling existing holidays
+    
     setAvailableHolidays(prev => 
       prev.map((holiday, i) => 
         i === index ? { ...holiday, selected: !holiday.selected } : holiday
@@ -132,7 +145,7 @@ export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps)
 
   const selectAll = () => {
     setAvailableHolidays(prev => 
-      prev.map(holiday => ({ ...holiday, selected: true }))
+      prev.map(holiday => ({ ...holiday, selected: !holiday.exists }))
     );
   };
 
@@ -240,7 +253,7 @@ export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps)
                 </Label>
                 <div className="space-x-2">
                   <Button variant="outline" size="sm" onClick={selectAll}>
-                    Seleccionar todos
+                    Seleccionar disponibles
                   </Button>
                   <Button variant="outline" size="sm" onClick={selectNone}>
                     Deseleccionar todos
@@ -250,13 +263,19 @@ export function HolidayImport({ isOpen, onClose, onImport }: HolidayImportProps)
 
               <div className="max-h-60 overflow-y-auto border rounded-lg p-4 space-y-2">
                 {availableHolidays.map((holiday, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                  <div key={index} className={`flex items-center space-x-3 p-2 rounded ${
+                    holiday.exists ? 'bg-gray-100 opacity-60' : 'hover:bg-gray-50'
+                  }`}>
                     <Checkbox
                       checked={holiday.selected}
                       onCheckedChange={() => toggleHolidaySelection(index)}
+                      disabled={holiday.exists}
                     />
                     <div className="flex-1">
-                      <div className="font-medium">{holiday.name}</div>
+                      <div className={`font-medium ${holiday.exists ? 'text-gray-500' : ''}`}>
+                        {holiday.name}
+                        {holiday.exists && <span className="ml-2 text-xs text-gray-400">(Ya existe)</span>}
+                      </div>
                       <div className="text-sm text-gray-500">
                         {new Date(holiday.date).toLocaleDateString('es-ES', {
                           weekday: 'long',
