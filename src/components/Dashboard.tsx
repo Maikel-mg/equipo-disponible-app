@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
@@ -96,11 +97,11 @@ export function Dashboard() {
                   <p className="text-sm font-medium text-gray-900">{request.user_name}</p>
                   <p className="text-xs text-gray-500 capitalize">{request.type}</p>
                   <p className="text-xs text-gray-500">
-                    {formatDate(request.start_date, 'dd/MM')} - {formatDate(request.end_date, 'dd/MM')}
+                    {formatDate(request.start_date, 'dd/MM')} - {formatDate(request.end_date, 'dd/MM')}{' '}
+                    <span className="text-gray-400">
+                      ({request.days_count} {request.days_count === 1 ? 'día' : 'días'})
+                    </span>
                   </p>
-                  <span className="text-[11px] text-gray-400 block mt-0.5">
-                    {request.days_count} {request.days_count === 1 ? 'día' : 'días'}
-                  </span>
                 </div>
                 <span className={`status-${request.status}`}>
                   {request.status}
