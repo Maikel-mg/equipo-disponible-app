@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useHolidays } from '@/hooks/useHolidays';
 import { HolidayForm } from './HolidayForm';
 import { HolidayTable } from './HolidayTable';
+import { HolidayImport } from './HolidayImport';
 import { Button } from '@/components/ui/button';
 import { Plus, Calendar, Download, Upload } from 'lucide-react';
 import { Holiday } from '@/models/types';
@@ -12,6 +13,7 @@ export function HolidayManager() {
   const { holidays, loading, createHoliday, deleteHoliday } = useHolidays();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | undefined>();
 
   const handleCreateHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
@@ -25,6 +27,24 @@ export function HolidayManager() {
       toast({
         title: "Error",
         description: "No se pudo crear el festivo. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImportHolidays = async (importedHolidays: Omit<Holiday, 'id' | 'created_at' | 'created_by'>[]) => {
+    try {
+      for (const holidayData of importedHolidays) {
+        await createHoliday(holidayData);
+      }
+      toast({
+        title: "Festivos importados",
+        description: `Se han importado ${importedHolidays.length} festivos correctamente.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron importar todos los festivos. Inténtalo de nuevo.",
         variant: "destructive",
       });
     }
@@ -56,14 +76,6 @@ export function HolidayManager() {
     setEditingHoliday(undefined);
   };
 
-  const handleImportHolidays = () => {
-    // TODO: Implementar importación de festivos desde archivo CSV/JSON
-    toast({
-      title: "Próximamente",
-      description: "La funcionalidad de importación estará disponible pronto.",
-    });
-  };
-
   const handleExportHolidays = () => {
     // TODO: Implementar exportación de festivos a CSV/JSON
     toast({
@@ -88,11 +100,11 @@ export function HolidayManager() {
         <div className="flex items-center space-x-3">
           <Button 
             variant="outline" 
-            onClick={handleImportHolidays}
+            onClick={() => setIsImportOpen(true)}
             className="hidden sm:flex"
           >
             <Upload className="w-4 h-4 mr-2" />
-            Importar
+            Importar Festivos
           </Button>
           
           <Button 
@@ -184,6 +196,13 @@ export function HolidayManager() {
         onClose={handleFormClose}
         onSubmit={handleCreateHoliday}
         holiday={editingHoliday}
+      />
+
+      {/* Holiday Import Modal */}
+      <HolidayImport
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImport={handleImportHolidays}
       />
     </div>
   );
