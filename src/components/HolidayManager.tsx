@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { useHolidays } from '@/hooks/useHolidays';
+import { useAuth } from '@/contexts/AuthContext';
 import { HolidayForm } from './HolidayForm';
 import { HolidayTable } from './HolidayTable';
 import { HolidayImport } from './HolidayImport';
@@ -11,11 +13,15 @@ import { exportToCSV, exportToJSON } from '@/utils/exportHolidays';
 
 export function HolidayManager() {
   const { holidays, loading, createHoliday, updateHoliday, deleteHoliday } = useHolidays();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | undefined>();
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
+
+  // Verificar si el usuario puede gestionar festivos (solo responsable y rrhh)
+  const canManageHolidays = user?.role === 'responsable' || user?.role === 'rrhh';
 
   // NUEVO: Lógica para crear o editar
   const handleSubmitHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
@@ -146,42 +152,57 @@ export function HolidayManager() {
             Calendario Laboral
           </h1>
           <p className="text-gray-600 mt-1">
-            Gestiona los días festivos y no laborables del año
+            {canManageHolidays ? 'Gestiona los días festivos y no laborables del año' : 'Consulta los días festivos y no laborables del año'}
           </p>
         </div>
         
-        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsImportOpen(true)}
-              className="flex-1 sm:flex-none"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Importar Festivos</span>
-              <span className="sm:hidden">Importar</span>
-            </Button>
+        {canManageHolidays && (
+          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsImportOpen(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Importar Festivos</span>
+                <span className="sm:hidden">Importar</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleExportHolidays}
+                className="flex-1 sm:flex-none"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Exportar</span>
+                <span className="sm:hidden">Exportar</span>
+              </Button>
+            </div>
             
+            <Button onClick={() => setIsFormOpen(true)} className="w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Festivo
+            </Button>
+          </div>
+        )}
+        
+        {!canManageHolidays && (
+          <div className="flex justify-end">
             <Button 
               variant="outline" 
               onClick={handleExportHolidays}
-              className="flex-1 sm:flex-none"
+              className="w-full sm:w-auto"
             >
               <Download className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Exportar</span>
-              <span className="sm:hidden">Exportar</span>
+              Exportar
             </Button>
           </div>
-          
-          <Button onClick={() => setIsFormOpen(true)} className="w-full sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Festivo
-          </Button>
-        </div>
+        )}
       </div>
 
-      {/* Botón de eliminar seleccionados */}
-      {selectedHolidays.length > 0 && (
+      {/* Botón de eliminar seleccionados - solo para gestores */}
+      {canManageHolidays && selectedHolidays.length > 0 && (
         <div className="flex items-center gap-4 bg-red-50 border border-red-200 rounded-md px-4 py-2">
           <span className="text-sm font-medium text-red-800">{selectedHolidays.length} festivos seleccionados</span>
           <Button
@@ -261,31 +282,35 @@ export function HolidayManager() {
         <div className="p-6">
           <HolidayTable
             holidays={holidays}
-            onEdit={handleEditHoliday}
-            onDelete={handleDeleteHoliday}
+            onEdit={canManageHolidays ? handleEditHoliday : undefined}
+            onDelete={canManageHolidays ? handleDeleteHoliday : undefined}
             loading={loading}
-            onSelectionChange={setSelectedHolidays}
-            selectedIds={selectedHolidays}
-            onDeleteSelected={handleDeleteSelectedHolidays}
+            onSelectionChange={canManageHolidays ? setSelectedHolidays : undefined}
+            selectedIds={canManageHolidays ? selectedHolidays : []}
+            onDeleteSelected={canManageHolidays ? handleDeleteSelectedHolidays : undefined}
           />
         </div>
       </div>
 
-      {/* Holiday Form Modal */}
-      <HolidayForm
-        isOpen={isFormOpen}
-        onClose={handleFormClose}
-        onSubmit={handleSubmitHoliday} // Cambiar a nueva función unificada
-        holiday={editingHoliday}
-      />
+      {/* Holiday Form Modal - solo para gestores */}
+      {canManageHolidays && (
+        <HolidayForm
+          isOpen={isFormOpen}
+          onClose={handleFormClose}
+          onSubmit={handleSubmitHoliday}
+          holiday={editingHoliday}
+        />
+      )}
 
-      {/* Holiday Import Modal */}
-      <HolidayImport
-        isOpen={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
-        onImport={handleImportHolidays}
-        existingHolidays={holidays}
-      />
+      {/* Holiday Import Modal - solo para gestores */}
+      {canManageHolidays && (
+        <HolidayImport
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImport={handleImportHolidays}
+          existingHolidays={holidays}
+        />
+      )}
     </div>
   );
 }
