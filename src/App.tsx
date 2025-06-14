@@ -11,6 +11,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { HolidayManager } from "@/components/HolidayManager";
 import { UserManagement } from "@/components/UserManagement";
 import { TeamManagement } from "@/components/TeamManagement";
+import { MonthlyReport } from "@/components/MonthlyReport";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LeaveRequestsPage from "@/components/LeaveRequestsPage";
