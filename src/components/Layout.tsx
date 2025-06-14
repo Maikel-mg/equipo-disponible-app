@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, login, loading } = useAuth();
+  const { user, mockUsers, login, loading } = useAuth();
 
   if (loading) {
     return (
@@ -26,7 +26,8 @@ export function Layout({ children }: LayoutProps) {
   }
 
   if (!user) {
-    return <LoginScreen onLogin={login} />;
+    // Mostrar pantalla de login de demo con selección de usuario
+    return <LoginScreen users={mockUsers} onLogin={login} />;
   }
 
   return (

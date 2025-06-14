@@ -34,6 +34,8 @@ export function Header() {
     }
   };
 
+  if (!user) return null;
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -41,15 +43,18 @@ export function Header() {
           <SidebarTrigger />
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              Bienvenido, {user?.name}
+              Bienvenido, {user.name}
             </h2>
             <div className="flex items-center space-x-2">
-              <span className={`flex items-center space-x-1 text-sm font-medium capitalize ${getRoleColor(user?.role || '')}`}>
-                {getRoleIcon(user?.role || '')}
-                <span>{user?.role}</span>
+              <span className={`flex items-center space-x-1 text-sm font-medium capitalize ${getRoleColor(user.role)}`}>
+                {getRoleIcon(user.role)}
+                <span>{user.role}</span>
               </span>
               <span className="text-gray-300">•</span>
-              <span className="text-sm text-gray-500">{user?.email}</span>
+              <span className="text-sm text-gray-500">{user.email}</span>
+              <span className="text-gray-300">•</span>
+              <span className="text-xs text-gray-500">Vacaciones: <b>{user.vacation_days_balance}</b></span>
+              <span className="text-xs text-gray-500 ml-2">Bajas: <b>{user.sick_days_balance}</b></span>
             </div>
           </div>
         </div>
