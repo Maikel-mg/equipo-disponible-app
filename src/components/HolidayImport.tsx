@@ -73,12 +73,11 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
     try {
       const hd = new Holidays(selectedCountry);
       const holidays = hd.getHolidays(parseInt(selectedYear));
-      
+
       console.log('Raw holidays from library:', holidays);
       console.log('Existing holidays in app:', existingHolidays);
-      
+
       const importableHolidays: ImportableHoliday[] = holidays.map((holiday: any) => {
-        // Handle different date formats that the library might return
         let dateString: string;
         
         if (holiday.date instanceof Date) {
@@ -86,12 +85,10 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
         } else if (typeof holiday.date === 'string') {
           dateString = holiday.date.split('T')[0];
         } else if (holiday.date && typeof holiday.date === 'object') {
-          // If it's an object with date properties, try to construct a date
           if (holiday.date.year && holiday.date.month && holiday.date.day) {
             const date = new Date(holiday.date.year, holiday.date.month - 1, holiday.date.day);
             dateString = date.toISOString().split('T')[0];
           } else {
-            // Fallback: try to create a Date from the object
             dateString = new Date(holiday.date).toISOString().split('T')[0];
           }
         } else {
@@ -99,22 +96,22 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
           dateString = new Date().toISOString().split('T')[0]; // Fallback to today
         }
 
-        // Check if this holiday already exists
         const exists = existingHolidays.some(existing => {
-          const dateMatch = existing.date === dateString;
-          const nameMatch = existing.name.toLowerCase() === holiday.name.toLowerCase();
-          console.log(`Checking ${holiday.name} (${dateString}) against ${existing.name} (${existing.date}): dateMatch=${dateMatch}, nameMatch=${nameMatch}`);
+          const dateMatch =
+            existing.date === dateString ||
+            existing.date === dateString.split(" ")[0] || // por si hay formato con horas
+            dateString.startsWith(existing.date);
+          const nameMatch = existing.name.trim().toLowerCase() === holiday.name.trim().toLowerCase();
+
           return dateMatch && nameMatch;
         });
-
-        console.log(`Holiday ${holiday.name} exists: ${exists}`);
 
         return {
           name: holiday.name,
           date: dateString,
           type: holiday.type === 'public' ? 'nacional' : 'local',
-          selected: !exists, // Only select if it doesn't exist
-          exists: exists,
+          selected: !exists,  // Solo marcar seleccionados los NO existentes
+          exists,
         };
       });
 
@@ -139,31 +136,34 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
   };
 
   const toggleHolidaySelection = (index: number) => {
-    const holiday = availableHolidays[index];
-    if (holiday.exists) return; // Don't allow toggling existing holidays
-    
-    setAvailableHolidays(prev => 
-      prev.map((holiday, i) => 
-        i === index ? { ...holiday, selected: !holiday.selected } : holiday
-      )
-    );
+    setAvailableHolidays(prev => prev.map((holiday, i) => {
+      if (i !== index) return holiday;
+      if (holiday.exists) return holiday; // Si ya existe, nunca permitir cambiar selected
+      return { ...holiday, selected: !holiday.selected };
+    }));
   };
 
   const selectAll = () => {
-    setAvailableHolidays(prev => 
-      prev.map(holiday => ({ ...holiday, selected: !holiday.exists }))
+    setAvailableHolidays(prev =>
+      prev.map(holiday => ({
+        ...holiday,
+        selected: !holiday.exists ? true : false  // desmarcado si existe
+      }))
     );
   };
 
   const selectNone = () => {
-    setAvailableHolidays(prev => 
-      prev.map(holiday => ({ ...holiday, selected: false }))
+    setAvailableHolidays(prev =>
+      prev.map(holiday => ({
+        ...holiday,
+        selected: false
+      }))
     );
   };
 
   const handleImport = () => {
     const selectedHolidays = availableHolidays
-      .filter(holiday => holiday.selected)
+      .filter(holiday => holiday.selected && !holiday.exists)
       .map(holiday => ({
         name: holiday.name,
         date: holiday.date,
