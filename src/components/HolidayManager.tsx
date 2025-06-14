@@ -71,12 +71,14 @@ export function HolidayManager() {
     }
   };
 
-  const handleDeleteSelectedHolidays = async () => {
-    if (selectedHolidays.length === 0) return;
-    if (!window.confirm(`¿Seguro que deseas eliminar los ${selectedHolidays.length} festivos seleccionados?`)) return;
+  const handleDeleteSelectedHolidays = async (ids?: string[]) => {
+    // El parámetro opcional permite ser llamado con los ids de la tabla directamente
+    const idsToDelete = Array.isArray(ids) ? ids : selectedHolidays;
+    if (idsToDelete.length === 0) return;
+    if (!window.confirm(`¿Seguro que deseas eliminar los ${idsToDelete.length} festivos seleccionados?`)) return;
 
     let deleted = 0;
-    for (const id of selectedHolidays) {
+    for (const id of idsToDelete) {
       try {
         await deleteHoliday(id);
         deleted++;
@@ -233,6 +235,7 @@ export function HolidayManager() {
             loading={loading}
             onSelectionChange={setSelectedHolidays}
             selectedIds={selectedHolidays}
+            onDeleteSelected={handleDeleteSelectedHolidays}
           />
         </div>
       </div>

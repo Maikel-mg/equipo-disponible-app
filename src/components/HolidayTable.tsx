@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 import { Holiday } from '@/models/types';
@@ -33,6 +32,7 @@ interface HolidayTableProps {
   loading?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
   selectedIds?: string[];
+  onDeleteSelected?: (selectedIds: string[]) => void; // NUEVA PROP
 }
 
 // Estados y lógica de selección de filas
@@ -43,6 +43,7 @@ export function HolidayTable({
   loading,
   onSelectionChange,
   selectedIds = [],
+  onDeleteSelected,
 }: HolidayTableProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -117,7 +118,9 @@ export function HolidayTable({
           className="flex items-center gap-2"
           type="button"
           onClick={() => {
-            if (onSelectionChange) onSelectionChange(selected);
+            if (onDeleteSelected) {
+              onDeleteSelected(selected);
+            }
           }}
         >
           <Trash2 className="w-4 h-4 mr-1" />
@@ -216,4 +219,3 @@ export function HolidayTable({
     </div>
   );
 }
-
