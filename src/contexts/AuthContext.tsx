@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  setRole: (role: User["role"]) => void; // NUEVO
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,13 +65,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  // NUEVO: cambiar el rol
+  const setRole = (role: User['role']) => {
+    setUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            role,
+            // Mock para RRHH/admin, poner saldo alto
+            vacation_days_balance: role === "rrhh" ? 99 : prev.vacation_days_balance,
+            sick_days_balance: role === "rrhh" ? 99 : prev.sick_days_balance,
+          }
+        : null
+    );
+  };
+
   const value = {
     user,
     loading,
     login,
     logout,
     isAuthenticated: !!user,
+    setRole, // añadir al contexto
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
