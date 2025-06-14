@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,6 +10,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { HolidayManager } from "@/components/HolidayManager";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import LeaveRequestsPage from "@/components/LeaveRequestsPage";
 
 const queryClient = new QueryClient();
 
@@ -24,7 +24,7 @@ const App = () => (
           <Layout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/requests" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Mis Solicitudes</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
+              <Route path="/requests" element={<LeaveRequestsPage />} />
               <Route path="/calendar" element={<HolidayManager />} />
               <Route path="/team" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Equipo</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
               <Route path="/reports" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Reportes</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
