@@ -9,7 +9,9 @@ import {
   BarChart3, 
   Settings, 
   Users,
-  Home
+  Home,
+  UserCog,
+  UsersIcon
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,6 +30,8 @@ const navigation = [
   { name: 'Mis Solicitudes', href: '/requests', icon: FileText, roles: ['empleado', 'responsable', 'rrhh'] },
   { name: 'Calendario', href: '/calendar', icon: Calendar, roles: ['empleado', 'responsable', 'rrhh'] },
   { name: 'Equipo', href: '/team', icon: Users, roles: ['responsable', 'rrhh'] },
+  { name: 'Usuarios', href: '/users', icon: UserCog, roles: ['rrhh'] },
+  { name: 'Equipos', href: '/teams', icon: UsersIcon, roles: ['rrhh'] },
   { name: 'Reportes', href: '/reports', icon: BarChart3, roles: ['rrhh'] },
   { name: 'Configuración', href: '/settings', icon: Settings, roles: ['rrhh'] },
 ];

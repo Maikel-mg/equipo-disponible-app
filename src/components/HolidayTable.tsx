@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 import { Holiday } from '@/models/types';
 import { HOLIDAY_TYPES } from '@/config/constants';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Table,
   TableBody,
@@ -45,10 +46,11 @@ export function HolidayTable({
   selectedIds = [],
   onDeleteSelected,
 }: HolidayTableProps) {
+  const { user } = useAuth();
   const [selected, setSelected] = useState<string[]>([]);
 
-  // Solo permitir selección si hay funciones de gestión disponibles
-  const canManage = Boolean(onEdit && onDelete);
+  // Solo permitir gestión a responsables y RRHH
+  const canManage = user?.role === 'responsable' || user?.role === 'rrhh';
 
   useEffect(() => {
     setSelected(selectedIds);
