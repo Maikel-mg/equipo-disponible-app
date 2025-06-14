@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useHolidays } from '@/hooks/useHolidays';
 import { HolidayForm } from './HolidayForm';
 import { HolidayTable } from './HolidayTable';
 import { HolidayImport } from './HolidayImport';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, Download, Upload } from 'lucide-react';
+import { Plus, Calendar, Download, Upload, Trash2 } from 'lucide-react';
 import { Holiday } from '@/models/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,6 +14,7 @@ export function HolidayManager() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | undefined>();
+  const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
 
   const handleCreateHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
     try {
@@ -69,6 +69,26 @@ export function HolidayManager() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleDeleteSelectedHolidays = async () => {
+    if (selectedHolidays.length === 0) return;
+    if (!window.confirm(`¿Seguro que deseas eliminar los ${selectedHolidays.length} festivos seleccionados?`)) return;
+
+    let deleted = 0;
+    for (const id of selectedHolidays) {
+      try {
+        await deleteHoliday(id);
+        deleted++;
+      } catch (e) {
+        // Error ya informado por deleteHoliday
+      }
+    }
+    setSelectedHolidays([]);
+    toast({
+      title: "Festivos eliminados",
+      description: `Se han eliminado ${deleted} festivos seleccionados.`,
+    });
   };
 
   const handleFormClose = () => {
@@ -126,6 +146,27 @@ export function HolidayManager() {
           </Button>
         </div>
       </div>
+
+      {/* Botón de eliminar seleccionados */}
+      {selectedHolidays.length > 0 && (
+        <div className="flex items-center gap-4 bg-red-50 border border-red-200 rounded-md px-4 py-2">
+          <span className="text-sm font-medium text-red-800">{selectedHolidays.length} festivos seleccionados</span>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteSelectedHolidays}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Eliminar seleccionados
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setSelectedHolidays([])}
+          >
+            Cancelar selección
+          </Button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -190,6 +231,8 @@ export function HolidayManager() {
             onEdit={handleEditHoliday}
             onDelete={handleDeleteHoliday}
             loading={loading}
+            onSelectionChange={setSelectedHolidays}
+            selectedIds={selectedHolidays}
           />
         </div>
       </div>

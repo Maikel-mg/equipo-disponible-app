@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 import { Holiday } from '@/models/types';
 import { HOLIDAY_TYPES } from '@/config/constants';
@@ -24,15 +24,54 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface HolidayTableProps {
   holidays: Holiday[];
   onEdit: (holiday: Holiday) => void;
   onDelete: (holidayId: string) => void;
   loading?: boolean;
+  onSelectionChange?: (selectedIds: string[]) => void;
+  selectedIds?: string[];
 }
 
-export function HolidayTable({ holidays, onEdit, onDelete, loading }: HolidayTableProps) {
+// Estados y lógica de selección de filas
+export function HolidayTable({
+  holidays,
+  onEdit,
+  onDelete,
+  loading,
+  onSelectionChange,
+  selectedIds = [],
+}: HolidayTableProps) {
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelected(selectedIds);
+  }, [selectedIds]);
+
+  useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(selected);
+    }
+    // eslint-disable-next-line
+  }, [selected]);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const isAllSelected = holidays.length > 0 && selected.length === holidays.length;
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelected([]);
+    } else {
+      setSelected(holidays.map((h) => h.id));
+    }
+  };
+
   const getTypeLabel = (type: Holiday['type']) => {
     return HOLIDAY_TYPES.find(t => t.value === type)?.label || type;
   };
@@ -67,9 +106,43 @@ export function HolidayTable({ holidays, onEdit, onDelete, loading }: HolidayTab
 
   return (
     <div className="rounded-md border">
+      {/* Barra de acciones cuando hay seleccionados */}
+      <div className={`p-2 border-b bg-slate-50 flex items-center gap-4 ${selected.length > 0 ? '' : 'hidden'}`}>
+        <span className="text-sm text-gray-700 font-medium">
+          {selected.length} seleccionados
+        </span>
+        <Button
+          variant="destructive"
+          size="sm"
+          className="flex items-center gap-2"
+          type="button"
+          onClick={() => {
+            if (onSelectionChange) onSelectionChange(selected);
+          }}
+        >
+          <Trash2 className="w-4 h-4 mr-1" />
+          Eliminar seleccionados
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-2"
+          type="button"
+          onClick={() => setSelected([])}
+        >
+          Deseleccionar todos
+        </Button>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[32px] px-2">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={toggleSelectAll}
+                aria-label="Seleccionar todos"
+              />
+            </TableHead>
             <TableHead>Nombre</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Tipo</TableHead>
@@ -79,7 +152,14 @@ export function HolidayTable({ holidays, onEdit, onDelete, loading }: HolidayTab
         </TableHeader>
         <TableBody>
           {sortedHolidays.map((holiday) => (
-            <TableRow key={holiday.id}>
+            <TableRow key={holiday.id} className={selected.includes(holiday.id) ? "bg-blue-50" : ""}>
+              <TableCell className="px-2">
+                <Checkbox
+                  checked={selected.includes(holiday.id)}
+                  onCheckedChange={() => toggleSelect(holiday.id)}
+                  aria-label={`Seleccionar ${holiday.name}`}
+                />
+              </TableCell>
               <TableCell className="font-medium">
                 {holiday.name}
               </TableCell>
@@ -136,3 +216,4 @@ export function HolidayTable({ holidays, onEdit, onDelete, loading }: HolidayTab
     </div>
   );
 }
+
