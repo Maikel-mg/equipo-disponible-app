@@ -75,6 +75,7 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
       const holidays = hd.getHolidays(parseInt(selectedYear));
       
       console.log('Raw holidays from library:', holidays);
+      console.log('Existing holidays in app:', existingHolidays);
       
       const importableHolidays: ImportableHoliday[] = holidays.map((holiday: any) => {
         // Handle different date formats that the library might return
@@ -99,10 +100,14 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
         }
 
         // Check if this holiday already exists
-        const exists = existingHolidays.some(existing => 
-          existing.date === dateString && 
-          existing.name.toLowerCase() === holiday.name.toLowerCase()
-        );
+        const exists = existingHolidays.some(existing => {
+          const dateMatch = existing.date === dateString;
+          const nameMatch = existing.name.toLowerCase() === holiday.name.toLowerCase();
+          console.log(`Checking ${holiday.name} (${dateString}) against ${existing.name} (${existing.date}): dateMatch=${dateMatch}, nameMatch=${nameMatch}`);
+          return dateMatch && nameMatch;
+        });
+
+        console.log(`Holiday ${holiday.name} exists: ${exists}`);
 
         return {
           name: holiday.name,
@@ -113,6 +118,7 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
         };
       });
 
+      console.log('Final importable holidays:', importableHolidays);
       setAvailableHolidays(importableHolidays);
       
       const existingCount = importableHolidays.filter(h => h.exists).length;
@@ -264,7 +270,7 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
               <div className="max-h-60 overflow-y-auto border rounded-lg p-4 space-y-2">
                 {availableHolidays.map((holiday, index) => (
                   <div key={index} className={`flex items-center space-x-3 p-2 rounded ${
-                    holiday.exists ? 'bg-gray-100 opacity-60' : 'hover:bg-gray-50'
+                    holiday.exists ? 'bg-red-50 border border-red-200' : 'hover:bg-gray-50'
                   }`}>
                     <Checkbox
                       checked={holiday.selected}
@@ -272,9 +278,9 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
                       disabled={holiday.exists}
                     />
                     <div className="flex-1">
-                      <div className={`font-medium ${holiday.exists ? 'text-gray-500' : ''}`}>
+                      <div className={`font-medium ${holiday.exists ? 'text-red-600' : ''}`}>
                         {holiday.name}
-                        {holiday.exists && <span className="ml-2 text-xs text-gray-400">(Ya existe)</span>}
+                        {holiday.exists && <span className="ml-2 text-xs font-bold text-red-500">(YA EXISTE)</span>}
                       </div>
                       <div className="text-sm text-gray-500">
                         {new Date(holiday.date).toLocaleDateString('es-ES', {
