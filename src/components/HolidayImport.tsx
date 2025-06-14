@@ -22,8 +22,8 @@ import { Calendar, Download, Loader2 } from 'lucide-react';
 import { Holiday } from '@/models/types';
 import { useToast } from '@/hooks/use-toast';
 
-// Importamos la librería de festivos
-const Holidays = require('date-holidays');
+// Import the holidays library using ES6 syntax
+import Holidays from 'date-holidays';
 
 interface HolidayImportProps {
   isOpen: boolean;
