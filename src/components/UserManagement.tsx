@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useUsers';
@@ -81,6 +80,7 @@ function UserEditForm({
       console.log('Calling onSubmit with:', submitData);
       await onSubmit(submitData);
       console.log('onSubmit completed successfully');
+      onClose(); // Cerrar el diálogo después del éxito
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -238,10 +238,10 @@ export function UserManagement() {
       console.log('Calling updateUser API...');
       await updateUser(editingUser.id, data);
       console.log('User updated successfully');
-      setEditingUser(null);
-      setEditDialogOpen(false);
+      // No necesitamos cerrar manualmente aquí, lo hace el formulario
     } catch (error) {
       console.error('Error updating user:', error);
+      throw error; // Re-lanzar el error para que el formulario lo maneje
     }
   };
 
