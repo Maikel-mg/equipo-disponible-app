@@ -28,80 +28,111 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const createUserProfile = async (authUser: User) => {
+    try {
+      console.log('Creating user profile for:', authUser.id);
+      
+      const { data: newProfile, error } = await supabase
+        .from('profiles')
+        .insert([{
+          id: authUser.id,
+          email: authUser.email || '',
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
+          role: 'empleado' as const,
+          vacation_days_balance: 22,
+          sick_days_balance: 3,
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating profile:', error);
+        return null;
+      }
+      
+      console.log('Profile created successfully:', newProfile);
+      return newProfile as AppUser;
+    } catch (err) {
+      console.error('Unexpected error creating profile:', err);
+      return null;
+    }
+  };
+
+  const fetchUserProfile = async (authUser: User) => {
+    try {
+      console.log('Fetching user profile for:', authUser.id);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, create it
+          return await createUserProfile(authUser);
+        }
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      
+      console.log('Profile fetched successfully:', profile);
+      return {
+        ...profile,
+        role: profile.role as 'empleado' | 'responsable' | 'rrhh'
+      } as AppUser;
+    } catch (err) {
+      console.error('Unexpected error fetching profile:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     console.log('Setting up auth listener...');
     
-    // Set up auth state listener
+    let isProcessing = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (isProcessing) {
+          console.log('Already processing auth change, skipping...');
+          return;
+        }
+        
+        isProcessing = true;
         setSession(session);
         
         if (session?.user) {
-          // Use setTimeout to prevent potential recursion issues
-          setTimeout(async () => {
-            try {
-              console.log('Fetching user profile for:', session.user.id);
-              
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (error) {
-                console.error('Error fetching profile:', error);
-                
-                // If profile doesn't exist, create it
-                if (error.code === 'PGRST116') {
-                  console.log('Profile not found, creating one...');
-                  const { data: newProfile, error: createError } = await supabase
-                    .from('profiles')
-                    .insert([{
-                      id: session.user.id,
-                      email: session.user.email || '',
-                      name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
-                      role: 'empleado' as const,
-                      vacation_days_balance: 22,
-                      sick_days_balance: 3,
-                    }])
-                    .select()
-                    .single();
-                  
-                  if (createError) {
-                    console.error('Error creating profile:', createError);
-                  } else {
-                    console.log('Profile created successfully:', newProfile);
-                    setUser(newProfile as AppUser);
-                  }
-                }
-              } else {
-                console.log('Profile fetched successfully:', profile);
-                const typedProfile: AppUser = {
-                  ...profile,
-                  role: profile.role as 'empleado' | 'responsable' | 'rrhh'
-                };
-                setUser(typedProfile);
-              }
-            } catch (err) {
-              console.error('Unexpected error in auth handler:', err);
-            }
-          }, 0);
+          const profile = await fetchUserProfile(session.user);
+          setUser(profile);
         } else {
           setUser(null);
         }
         
         setLoading(false);
+        isProcessing = false;
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
-      if (!session) {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Initial session check:', session?.user?.email);
+        
+        if (!session) {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error checking session:', err);
         setLoading(false);
       }
-    });
+    };
+
+    checkSession();
 
     return () => {
       console.log('Cleaning up auth subscription');
@@ -111,10 +142,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     console.log('Logging out...');
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      setUser(null);
-      setSession(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (!error) {
+        setUser(null);
+        setSession(null);
+      }
+    } catch (err) {
+      console.error('Error logging out:', err);
     }
   };
 
@@ -131,7 +166,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateAuthUser,
   };
 
-  console.log('AuthContext render:', { user: user?.email, loading, isAuthenticated: !!user && !!session });
+  console.log('AuthContext state:', { 
+    hasUser: !!user, 
+    userEmail: user?.email, 
+    loading, 
+    isAuthenticated: !!user && !!session 
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
