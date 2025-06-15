@@ -12,6 +12,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { HolidayManager } from "@/components/HolidayManager";
 import { UserManagement } from "@/components/UserManagement";
 import { TeamManagement } from "@/components/TeamManagement";
+import { TeamDetailPage } from "@/components/TeamDetailPage";
 import { MonthlyReport } from "@/components/MonthlyReport";
 import { CalendarView } from "@/components/CalendarView";
 import { UserProfile } from "@/components/UserProfile";
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/teams" element={<TeamManagement />} />
+                <Route path="/teams/:teamId" element={<TeamDetailPage />} />
                 <Route path="/reports" element={<MonthlyReport />} />
                 <Route path="/settings" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Configuración</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
                 <Route path="*" element={<NotFound />} />

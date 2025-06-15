@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useUsers';
 import { Team, User } from '@/models/types';
@@ -28,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface TeamFormData {
@@ -183,7 +184,7 @@ export function TeamManagement() {
               <TableHead>Responsable</TableHead>
               <TableHead>Miembros</TableHead>
               <TableHead>Fecha Creación</TableHead>
-              <TableHead className="w-[100px]">Acciones</TableHead>
+              <TableHead className="w-[150px]">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,6 +196,15 @@ export function TeamManagement() {
                 <TableCell>{formatDate(team.created_at, 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
+                    <Link to={`/teams/${team.id}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Ver detalles"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -202,6 +212,7 @@ export function TeamManagement() {
                         setEditingTeam(team);
                         setDialogOpen(true);
                       }}
+                      title="Editar equipo"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -210,6 +221,7 @@ export function TeamManagement() {
                       size="sm"
                       onClick={() => handleDeleteTeam(team.id)}
                       className="text-red-600 hover:text-red-700"
+                      title="Eliminar equipo"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
