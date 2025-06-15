@@ -15,7 +15,7 @@ interface UserFormData {
   name: string;
   email: string;
   role: User['role'];
-  team_id?: string;
+  team_id?: string | null;
   vacation_days_balance: number;
   sick_days_balance: number;
 }

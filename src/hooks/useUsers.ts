@@ -85,27 +85,9 @@ export function useUsers() {
     mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
       console.log('updateUserMutation called with:', { userId, userData });
       
-      // Construir objeto de actualización con solo los campos que han cambiado
-      const updateData: any = {};
-      
-      if (userData.name !== undefined) updateData.name = userData.name;
-      if (userData.email !== undefined) updateData.email = userData.email;
-      if (userData.role !== undefined) updateData.role = userData.role;
-      if (userData.team_id !== undefined) {
-        updateData.team_id = userData.team_id === 'no-team' ? null : userData.team_id;
-      }
-      if (userData.vacation_days_balance !== undefined) {
-        updateData.vacation_days_balance = userData.vacation_days_balance;
-      }
-      if (userData.sick_days_balance !== undefined) {
-        updateData.sick_days_balance = userData.sick_days_balance;
-      }
-      
-      console.log('Sending update to Supabase with fields:', updateData);
-      
       const { data, error } = await supabase
         .from('profiles')
-        .update(updateData)
+        .update(userData)
         .eq('id', userId)
         .select()
         .single();

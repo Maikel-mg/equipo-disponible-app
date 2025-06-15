@@ -21,7 +21,7 @@ interface UserFormData {
   name: string;
   email: string;
   role: User['role'];
-  team_id?: string;
+  team_id?: string | null;
   vacation_days_balance: number;
   sick_days_balance: number;
 }
@@ -57,11 +57,11 @@ export function UserEditForm({
     
     setIsSubmitting(true);
     try {
-      const submitData = {
+      const submitData: UserFormData = {
         name: form.name,
         email: form.email,
         role: form.role,
-        team_id: form.team_id === 'no-team' ? undefined : form.team_id,
+        team_id: form.team_id === 'no-team' ? null : form.team_id,
         vacation_days_balance: form.vacation_days_balance,
         sick_days_balance: form.sick_days_balance,
       };
@@ -116,7 +116,7 @@ export function UserEditForm({
         </div>
         <div>
           <Label htmlFor="team">Equipo</Label>
-          <Select value={form.team_id} onValueChange={(value) => setForm(prev => ({ ...prev, team_id: value }))}>
+          <Select value={form.team_id || 'no-team'} onValueChange={(value) => setForm(prev => ({ ...prev, team_id: value }))}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar equipo" />
             </SelectTrigger>

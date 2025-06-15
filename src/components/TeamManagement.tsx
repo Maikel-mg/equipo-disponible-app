@@ -34,7 +34,7 @@ import { formatDate } from '@/lib/utils';
 
 interface TeamFormData {
   name: string;
-  manager_id: string;
+  manager_id: string | null;
 }
 
 function TeamForm({ 
@@ -50,7 +50,7 @@ function TeamForm({
 }) {
   const [form, setForm] = useState<TeamFormData>({
     name: initialData?.name || '',
-    manager_id: initialData?.manager_id || '',
+    manager_id: initialData?.manager_id || null,
   });
 
   useEffect(() => {
@@ -58,7 +58,7 @@ function TeamForm({
     // and resets when creating a new team.
     setForm({
       name: initialData?.name || '',
-      manager_id: initialData?.manager_id || '',
+      manager_id: initialData?.manager_id || null,
     });
   }, [initialData]);
 
@@ -87,11 +87,12 @@ function TeamForm({
         </div>
         <div>
           <Label htmlFor="manager">Responsable</Label>
-          <Select value={form.manager_id} onValueChange={(value) => setForm(prev => ({ ...prev, manager_id: value }))}>
+          <Select value={form.manager_id || 'no-manager'} onValueChange={(value) => setForm(prev => ({ ...prev, manager_id: value === 'no-manager' ? null : value }))}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar responsable" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="no-manager">Sin responsable</SelectItem>
               {responsables.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {user.name} ({user.role})
