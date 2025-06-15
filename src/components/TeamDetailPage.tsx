@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useUsers';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
-import { ArrowLeft, Users, Calendar, BarChart3, Settings } from 'lucide-react';
+import { ArrowLeft, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TeamStats } from './TeamStats';
 import { MemberCard } from './MemberCard';
@@ -16,6 +16,8 @@ export function TeamDetailPage() {
   const { user } = useAuth();
   const { users, teams, loading } = useUsers();
   const { requests } = useLeaveRequests();
+
+  console.log('TeamDetailPage render:', { teamId, user: user?.email, loading });
 
   // Verificar permisos
   if (user?.role !== 'rrhh' && user?.role !== 'responsable') {
@@ -32,11 +34,22 @@ export function TeamDetailPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-2 text-gray-600">Cargando detalles del equipo...</p>
+      </div>
+    );
+  }
+
   const team = teams.find(t => t.id === teamId);
   const teamMembers = users.filter(u => u.team_id === teamId);
   const teamRequests = requests.filter(r => 
     teamMembers.some(member => member.id === r.user_id)
   );
+
+  console.log('TeamDetailPage data:', { team, teamMembers: teamMembers.length, teamRequests: teamRequests.length });
 
   // Verificar si el responsable puede ver este equipo
   if (user?.role === 'responsable' && team?.manager_id !== user.id) {
@@ -49,15 +62,6 @@ export function TeamDetailPage() {
         <p className="text-gray-500">
           Solo puedes ver los detalles de tu propio equipo.
         </p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-2 text-gray-600">Cargando detalles del equipo...</p>
       </div>
     );
   }
