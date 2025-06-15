@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   const createUserProfile = async (authUser: User) => {
     try {
@@ -89,56 +90,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('Setting up auth listener...');
+    if (initialized) return;
     
-    let isProcessing = false;
+    console.log('Initializing auth context...');
+    setInitialized(true);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('Initial session:', initialSession?.user?.email || 'No session');
         
-        if (isProcessing) {
-          console.log('Already processing auth change, skipping...');
-          return;
+        if (initialSession?.user) {
+          const profile = await fetchUserProfile(initialSession.user);
+          setUser(profile);
+          setSession(initialSession);
         }
         
-        isProcessing = true;
-        setSession(session);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setLoading(false);
+      }
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log('Auth state changed:', event, newSession?.user?.email || 'No session');
         
-        if (session?.user) {
-          const profile = await fetchUserProfile(session.user);
+        setSession(newSession);
+        
+        if (newSession?.user) {
+          const profile = await fetchUserProfile(newSession.user);
           setUser(profile);
         } else {
           setUser(null);
         }
         
-        setLoading(false);
-        isProcessing = false;
+        if (initialized) {
+          setLoading(false);
+        }
       }
     );
 
-    // Check for existing session
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('Initial session check:', session?.user?.email);
-        
-        if (!session) {
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Error checking session:', err);
-        setLoading(false);
-      }
-    };
-
-    checkSession();
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialized]);
 
   const logout = async () => {
     console.log('Logging out...');
@@ -170,7 +173,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hasUser: !!user, 
     userEmail: user?.email, 
     loading, 
-    isAuthenticated: !!user && !!session 
+    isAuthenticated: !!user && !!session,
+    initialized
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -11,9 +11,9 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
 
-  console.log('Layout render:', { user: user?.email, loading });
+  console.log('Layout render:', { user: user?.email, loading, isAuthenticated });
 
   if (loading) {
     return (
@@ -26,8 +26,8 @@ export function Layout({ children }: LayoutProps) {
     );
   }
 
-  if (!user) {
-    console.log('No user found, showing AuthScreen');
+  if (!isAuthenticated || !user) {
+    console.log('No authenticated user found, showing AuthScreen');
     return <AuthScreen />;
   }
 
