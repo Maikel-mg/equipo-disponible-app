@@ -71,13 +71,16 @@ function UserEditForm({
     setIsSubmitting(true);
     try {
       const submitData = {
-        ...form,
-        team_id: form.team_id === 'no-team' ? undefined : form.team_id
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        team_id: form.team_id === 'no-team' ? undefined : form.team_id,
+        vacation_days_balance: form.vacation_days_balance,
+        sick_days_balance: form.sick_days_balance,
       };
       console.log('Calling onSubmit with:', submitData);
       await onSubmit(submitData);
       console.log('onSubmit completed successfully');
-      onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {

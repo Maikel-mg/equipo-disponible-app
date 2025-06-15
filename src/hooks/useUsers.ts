@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Team } from '@/models/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,12 +8,17 @@ export function useUsers() {
   const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
+      console.log('Fetching users...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+      console.log('Users fetched successfully:', data?.length);
       return data as User[];
     },
   });
@@ -79,18 +83,42 @@ export function useUsers() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
+      console.log('updateUserMutation called with:', { userId, userData });
+      
+      // Filtrar datos para solo incluir campos válidos de la tabla profiles
+      const validFields = {
+        ...(userData.name && { name: userData.name }),
+        ...(userData.email && { email: userData.email }),
+        ...(userData.role && { role: userData.role }),
+        ...(userData.team_id !== undefined && { team_id: userData.team_id === 'no-team' ? null : userData.team_id }),
+        ...(userData.vacation_days_balance !== undefined && { vacation_days_balance: userData.vacation_days_balance }),
+        ...(userData.sick_days_balance !== undefined && { sick_days_balance: userData.sick_days_balance }),
+      };
+      
+      console.log('Sending update to Supabase with fields:', validFields);
+      
       const { data, error } = await supabase
         .from('profiles')
-        .update(userData)
+        .update(validFields)
         .eq('id', userId)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+      
+      console.log('User updated successfully in database:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('updateUserMutation onSuccess called with:', data);
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      console.log('Queries invalidated');
+    },
+    onError: (error) => {
+      console.error('updateUserMutation error:', error);
     },
   });
 
@@ -176,6 +204,7 @@ export function useUsers() {
   };
 
   const updateUser = async (userId: string, userData: Partial<User>) => {
+    console.log('updateUser function called with:', { userId, userData });
     return updateUserMutation.mutateAsync({ userId, userData });
   };
 
