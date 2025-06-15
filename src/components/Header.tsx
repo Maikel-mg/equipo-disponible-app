@@ -2,8 +2,9 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Bell, Search, LogOut, User, Briefcase, Shield } from 'lucide-react';
+import { Search, LogOut, User, Briefcase, Shield } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { NotificationCenter } from './NotificationCenter';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -64,9 +65,7 @@ export function Header() {
             <Search className="w-5 h-5" />
           </Button>
           
-          <Button variant="ghost" size="icon">
-            <Bell className="w-5 h-5" />
-          </Button>
+          <NotificationCenter />
 
           <Button 
             variant="ghost" 

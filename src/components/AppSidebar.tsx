@@ -11,7 +11,8 @@ import {
   Users,
   Home,
   UserCog,
-  UsersIcon
+  UsersIcon,
+  User
 } from 'lucide-react';
 import {
   Sidebar,
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: Home, roles: ['empleado', 'responsable', 'rrhh'] },
   { name: 'Mis Solicitudes', href: '/requests', icon: FileText, roles: ['empleado', 'responsable', 'rrhh'] },
   { name: 'Calendario', href: '/calendar', icon: Calendar, roles: ['empleado', 'responsable', 'rrhh'] },
+  { name: 'Mi Perfil', href: '/profile', icon: User, roles: ['empleado', 'responsable', 'rrhh'] },
   { name: 'Equipo', href: '/team', icon: Users, roles: ['responsable', 'rrhh'] },
   { name: 'Usuarios', href: '/users', icon: UserCog, roles: ['rrhh'] },
   { name: 'Equipos', href: '/teams', icon: UsersIcon, roles: ['rrhh'] },

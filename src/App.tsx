@@ -12,6 +12,9 @@ import { HolidayManager } from "@/components/HolidayManager";
 import { UserManagement } from "@/components/UserManagement";
 import { TeamManagement } from "@/components/TeamManagement";
 import { MonthlyReport } from "@/components/MonthlyReport";
+import { CalendarView } from "@/components/CalendarView";
+import { UserProfile } from "@/components/UserProfile";
+import { TeamPage } from "@/components/TeamPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LeaveRequestsPage from "@/components/LeaveRequestsPage";
@@ -29,8 +32,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/requests" element={<LeaveRequestsPage />} />
-              <Route path="/calendar" element={<HolidayManager />} />
-              <Route path="/team" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Equipo</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
+              <Route path="/calendar" element={<CalendarView />} />
+              <Route path="/team" element={<TeamPage />} />
+              <Route path="/profile" element={<UserProfile />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/teams" element={<TeamManagement />} />
               <Route path="/reports" element={<MonthlyReport />} />

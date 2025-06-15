@@ -44,6 +44,18 @@ export interface LeaveRequest {
   created_at: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  is_read: boolean;
+  related_id?: string;
+  related_type?: 'leave_request' | 'holiday' | 'team';
+  created_at: string;
+}
+
 export interface DashboardStats {
   pending_requests: number;
   approved_this_month: number;

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useHolidays } from '@/hooks/useHolidays';
@@ -12,11 +12,15 @@ import {
   TrendingUp,
   FileText
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { NewRequestModal } from './NewRequestModal';
 
 export function Dashboard() {
   const { user } = useAuth();
   const { requests } = useLeaveRequests();
   const { holidays } = useHolidays();
+  const navigate = useNavigate();
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
 
   const pendingRequests = requests.filter(r => r.status === 'pendiente').length;
   const approvedThisMonth = requests.filter(r => 
@@ -151,25 +155,40 @@ export function Dashboard() {
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-6 border border-blue-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left">
+          <button 
+            onClick={() => setShowNewRequestModal(true)}
+            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
+          >
             <FileText className="w-6 h-6 text-blue-600 mb-2" />
             <p className="font-medium text-gray-900">Nueva Solicitud</p>
             <p className="text-xs text-gray-500">Pedir días libres</p>
           </button>
           
-          <button className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left">
+          <button 
+            onClick={() => navigate('/calendar')}
+            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
+          >
             <Calendar className="w-6 h-6 text-green-600 mb-2" />
             <p className="font-medium text-gray-900">Ver Calendario</p>
             <p className="text-xs text-gray-500">Planificar ausencias</p>
           </button>
           
-          <button className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left">
+          <button 
+            onClick={() => navigate('/team')}
+            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
+          >
             <Users className="w-6 h-6 text-purple-600 mb-2" />
             <p className="font-medium text-gray-900">Estado del Equipo</p>
             <p className="text-xs text-gray-500">Ver disponibilidad</p>
           </button>
         </div>
       </div>
+
+      {/* New Request Modal */}
+      <NewRequestModal 
+        isOpen={showNewRequestModal}
+        onClose={() => setShowNewRequestModal(false)}
+      />
     </div>
   );
 }
