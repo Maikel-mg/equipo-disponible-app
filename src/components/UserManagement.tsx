@@ -41,47 +41,48 @@ interface UserFormData {
   sick_days_balance: number;
 }
 
-function UserForm({ 
+function UserEditForm({ 
   onSubmit, 
   onClose, 
   teams, 
   initialData 
 }: { 
-  onSubmit: (data: UserFormData) => void;
+  onSubmit: (data: UserFormData) => Promise<void>;
   onClose: () => void;
   teams: Team[];
-  initialData?: User;
+  initialData: User;
 }) {
   const [form, setForm] = useState<UserFormData>({
-    name: initialData?.name || '',
-    email: initialData?.email || '',
-    role: initialData?.role || 'empleado',
-    team_id: initialData?.team_id || 'no-team',
-    vacation_days_balance: initialData?.vacation_days_balance || 22,
-    sick_days_balance: initialData?.sick_days_balance || 3,
+    name: initialData.name,
+    email: initialData.email,
+    role: initialData.role,
+    team_id: initialData.team_id || 'no-team',
+    vacation_days_balance: initialData.vacation_days_balance,
+    sick_days_balance: initialData.sick_days_balance,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update form when initialData changes
-  React.useEffect(() => {
-    if (initialData) {
-      setForm({
-        name: initialData.name,
-        email: initialData.email,
-        role: initialData.role,
-        team_id: initialData.team_id || 'no-team',
-        vacation_days_balance: initialData.vacation_days_balance,
-        sick_days_balance: initialData.sick_days_balance,
-      });
-    }
-  }, [initialData]);
+  console.log('UserEditForm rendered with data:', { initialData, form });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const submitData = {
-      ...form,
-      team_id: form.team_id === 'no-team' ? undefined : form.team_id
-    };
-    onSubmit(submitData);
+    console.log('Form submitted with data:', form);
+    
+    setIsSubmitting(true);
+    try {
+      const submitData = {
+        ...form,
+        team_id: form.team_id === 'no-team' ? undefined : form.team_id
+      };
+      console.log('Calling onSubmit with:', submitData);
+      await onSubmit(submitData);
+      console.log('onSubmit completed successfully');
+      onClose();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -163,11 +164,11 @@ function UserForm({
           </div>
         </div>
         <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit">
-            Actualizar
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Actualizando...' : 'Actualizar'}
           </Button>
         </div>
       </form>
@@ -181,6 +182,13 @@ export function UserManagement() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  console.log('UserManagement rendered:', { 
+    usersCount: users.length, 
+    teamsCount: teams.length, 
+    loading,
+    editingUser: editingUser?.id
+  });
 
   // Solo RRHH puede gestionar usuarios
   if (user?.role !== 'rrhh') {
@@ -206,29 +214,54 @@ export function UserManagement() {
     vacation_days_balance: number;
     sick_days_balance: number;
   }) => {
-    await createUser(data);
+    console.log('Creating user with data:', data);
+    try {
+      await createUser(data);
+      console.log('User created successfully');
+    } catch (error) {
+      console.error('Error creating user:', error);
+    }
   };
 
   const handleUpdateUser = async (data: UserFormData) => {
-    if (editingUser) {
+    console.log('handleUpdateUser called with:', { data, editingUserId: editingUser?.id });
+    
+    if (!editingUser) {
+      console.error('No user selected for editing');
+      return;
+    }
+
+    try {
+      console.log('Calling updateUser API...');
       await updateUser(editingUser.id, data);
+      console.log('User updated successfully');
       setEditingUser(null);
       setEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating user:', error);
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
+    console.log('Attempting to delete user:', userId);
     if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-      await deleteUser(userId);
+      try {
+        await deleteUser(userId);
+        console.log('User deleted successfully');
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      }
     }
   };
 
   const handleEditClick = (userItem: User) => {
+    console.log('Edit button clicked for user:', userItem.id);
     setEditingUser(userItem);
     setEditDialogOpen(true);
   };
 
   const handleEditClose = () => {
+    console.log('Closing edit dialog');
     setEditDialogOpen(false);
     setEditingUser(null);
   };
@@ -314,12 +347,14 @@ export function UserManagement() {
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <UserForm
-          onSubmit={handleUpdateUser}
-          onClose={handleEditClose}
-          teams={teams}
-          initialData={editingUser || undefined}
-        />
+        {editingUser && (
+          <UserEditForm
+            onSubmit={handleUpdateUser}
+            onClose={handleEditClose}
+            teams={teams}
+            initialData={editingUser}
+          />
+        )}
       </Dialog>
 
       <CreateUserForm
