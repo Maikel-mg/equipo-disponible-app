@@ -1,42 +1,96 @@
+
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LeaveRequest } from '@/models/types';
-import { mockRequests, mockUsers } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useLeaveRequests() {
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setRequests(mockRequests);
-      setLoading(false);
-    }, 500);
-  }, []);
+  const { data: requests = [], isLoading: loading, error } = useQuery({
+    queryKey: ['leave-requests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as LeaveRequest[];
+    },
+    enabled: !!user,
+  });
+
+  const createRequestMutation = useMutation({
+    mutationFn: async (requestData: Omit<LeaveRequest, 'id' | 'created_at' | 'status'>) => {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .insert([requestData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+    },
+  });
+
+  const updateRequestMutation = useMutation({
+    mutationFn: async ({ 
+      requestId, 
+      status, 
+      comments 
+    }: { 
+      requestId: string; 
+      status: LeaveRequest['status']; 
+      comments?: string; 
+    }) => {
+      const updateData: any = {
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id,
+      };
+      
+      if (comments) {
+        updateData.review_comments = comments;
+      }
+
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .update(updateData)
+        .eq('id', requestId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+
+      // If approved vacation request, update user's balance
+      if (status === 'aprobada') {
+        const request = requests.find(r => r.id === requestId);
+        if (request && request.type === 'vacaciones') {
+          await supabase
+            .from('profiles')
+            .update({
+              vacation_days_balance: user!.vacation_days_balance - request.days_count
+            })
+            .eq('id', request.user_id);
+        }
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
 
   const createRequest = async (requestData: Omit<LeaveRequest, 'id' | 'created_at' | 'status'>) => {
-    try {
-      setLoading(true);
-      
-      const newRequest: LeaveRequest = {
-        ...requestData,
-        id: Math.random().toString(36).substr(2, 9),
-        status: 'pendiente',
-        created_at: new Date().toISOString(),
-      };
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setRequests(prev => [newRequest, ...prev]);
-      return newRequest;
-    } catch (err) {
-      setError('Error al crear la solicitud');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return createRequestMutation.mutateAsync(requestData);
   };
 
   const updateRequestStatus = async (
@@ -44,51 +98,13 @@ export function useLeaveRequests() {
     status: LeaveRequest['status'], 
     comments?: string
   ) => {
-    try {
-      setLoading(true);
-      
-      const requestToUpdate = requests.find(r => r.id === requestId);
-      if (!requestToUpdate) {
-        throw new Error("Solicitud no encontrada");
-      }
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setRequests(prev => 
-        prev.map(req => 
-          req.id === requestId 
-            ? { 
-                ...req, 
-                status, 
-                review_comments: comments,
-                reviewed_at: new Date().toISOString(),
-                reviewed_by: 'Usuario Actual'
-              }
-            : req
-        )
-      );
-
-      // Si es una solicitud de vacaciones aprobada, descontar del saldo del usuario.
-      if (status === 'aprobada' && requestToUpdate.type === 'vacaciones') {
-        const userIndex = mockUsers.findIndex(u => u.id === requestToUpdate.user_id);
-        if (userIndex !== -1) {
-          mockUsers[userIndex].vacation_days_balance -= requestToUpdate.days_count;
-        }
-      }
-
-    } catch (err) {
-      setError('Error al actualizar la solicitud');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return updateRequestMutation.mutateAsync({ requestId, status, comments });
   };
 
   return {
     requests,
-    loading,
-    error,
+    loading: loading || createRequestMutation.isPending || updateRequestMutation.isPending,
+    error: error?.message || null,
     createRequest,
     updateRequestStatus,
   };

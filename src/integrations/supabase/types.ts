@@ -9,7 +9,224 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      holidays: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date: string
+          id: string
+          is_mandatory: boolean
+          name: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date: string
+          id?: string
+          is_mandatory?: boolean
+          name: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          id?: string
+          is_mandatory?: boolean
+          name?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holidays_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          attachment_url: string | null
+          created_at: string | null
+          days_count: number
+          end_date: string
+          id: string
+          reason: string | null
+          review_comments: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string
+          type: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string | null
+          days_count: number
+          end_date: string
+          id?: string
+          reason?: string | null
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string
+          type: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string | null
+          days_count?: number
+          end_date?: string
+          id?: string
+          reason?: string | null
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string
+          type?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean
+          message: string
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          sick_days_balance: number
+          team_id: string | null
+          vacation_days_balance: number
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          sick_days_balance?: number
+          team_id?: string | null
+          vacation_days_balance?: number
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          sick_days_balance?: number
+          team_id?: string | null
+          vacation_days_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_team"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          id: string
+          manager_id: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

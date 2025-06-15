@@ -1,150 +1,155 @@
-import { useState, useEffect } from 'react';
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Team } from '@/models/types';
-import { mockUsers, mockTeams } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useUsers() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setUsers(mockUsers);
-      setTeams(mockTeams);
-      setLoading(false);
-    }, 500);
-  }, []);
-
-  const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
-    try {
-      setLoading(true);
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      const newUser: User = {
-        ...userData,
-        id: Math.random().toString(36).substr(2, 9),
-        created_at: new Date().toISOString(),
-      };
+      if (error) throw error;
+      return data as User[];
+    },
+  });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  const { data: teams = [], isLoading: teamsLoading, error: teamsError } = useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      setUsers(prev => [newUser, ...prev]);
-      return newUser;
-    } catch (err) {
-      setError('Error al crear el usuario');
-      throw err;
-    } finally {  
-      setLoading(false);
-    }
-  };
+      if (error) throw error;
+      return data as Team[];
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(userData)
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const createTeamMutation = useMutation({
+    mutationFn: async (teamData: Omit<Team, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('teams')
+        .insert([teamData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+
+  const updateTeamMutation = useMutation({
+    mutationFn: async ({ teamId, teamData }: { teamId: string; teamData: Partial<Team> }) => {
+      const { data, error } = await supabase
+        .from('teams')
+        .update(teamData)
+        .eq('id', teamId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+
+  const deleteTeamMutation = useMutation({
+    mutationFn: async (teamId: string) => {
+      const { error: updateUsersError } = await supabase
+        .from('profiles')
+        .update({ team_id: null })
+        .eq('team_id', teamId);
+
+      if (updateUsersError) throw updateUsersError;
+
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
 
   const updateUser = async (userId: string, userData: Partial<User>) => {
-    try {
-      setLoading(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setUsers(prev => 
-        prev.map(user => 
-          user.id === userId 
-            ? { ...user, ...userData }
-            : user
-        )
-      );
-    } catch (err) {
-      setError('Error al actualizar el usuario');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return updateUserMutation.mutateAsync({ userId, userData });
   };
 
   const deleteUser = async (userId: string) => {
-    try {
-      setLoading(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setUsers(prev => prev.filter(user => user.id !== userId));
-    } catch (err) {
-      setError('Error al eliminar el usuario');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return deleteUserMutation.mutateAsync(userId);
   };
 
   const createTeam = async (teamData: Omit<Team, 'id' | 'created_at'>) => {
-    try {
-      setLoading(true);
-      
-      const newTeam: Team = {
-        ...teamData,
-        id: Math.random().toString(36).substr(2, 9),
-        created_at: new Date().toISOString(),
-      };
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setTeams(prev => [newTeam, ...prev]);
-      return newTeam;
-    } catch (err) {
-      setError('Error al crear el equipo');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return createTeamMutation.mutateAsync(teamData);
   };
 
   const updateTeam = async (teamId: string, teamData: Partial<Team>) => {
-    try {
-      setLoading(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setTeams(prev => 
-        prev.map(team => 
-          team.id === teamId 
-            ? { ...team, ...teamData }
-            : team
-        )
-      );
-    } catch (err) {
-      setError('Error al actualizar el equipo');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return updateTeamMutation.mutateAsync({ teamId, teamData });
   };
 
   const deleteTeam = async (teamId: string) => {
-    try {
-      setLoading(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setTeams(prev => prev.filter(team => team.id !== teamId));
-      // También remover la asignación del equipo de los usuarios
-      setUsers(prev => prev.map(user => 
-        user.team_id === teamId 
-          ? { ...user, team_id: undefined }
-          : user
-      ));
-    } catch (err) {
-      setError('Error al eliminar el equipo');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return deleteTeamMutation.mutateAsync(teamId);
   };
+
+  const loading = usersLoading || teamsLoading || 
+    updateUserMutation.isPending || deleteUserMutation.isPending ||
+    createTeamMutation.isPending || updateTeamMutation.isPending || deleteTeamMutation.isPending;
+
+  const error = usersError?.message || teamsError?.message || null;
 
   return {
     users,
     teams,
     loading,
     error,
-    createUser,
+    createUser: async () => { throw new Error('Los usuarios se crean mediante registro'); },
     updateUser,
     deleteUser,
     createTeam,

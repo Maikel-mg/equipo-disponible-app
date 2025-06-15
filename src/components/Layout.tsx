@@ -4,15 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AppSidebar } from './AppSidebar';
 import { Header } from './Header';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { RoleSwitcher } from './RoleSwitcher';
-import { LoginScreen } from './LoginScreen';
+import { AuthScreen } from './AuthScreen';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, mockUsers, login, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -26,8 +25,7 @@ export function Layout({ children }: LayoutProps) {
   }
 
   if (!user) {
-    // Mostrar pantalla de login de demo con selección de usuario
-    return <LoginScreen users={mockUsers} onLogin={login} />;
+    return <AuthScreen />;
   }
 
   return (
@@ -37,7 +35,6 @@ export function Layout({ children }: LayoutProps) {
         <SidebarInset>
           <div className="flex flex-col min-h-screen">
             <Header />
-            <RoleSwitcher />
             <main className="flex-1 p-6">
               {children}
             </main>

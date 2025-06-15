@@ -1,19 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/models/types';
-import { mockUsers } from '@/data/mockData';
 
-// Usamos los usuarios del mock centralizado
-export const MOCK_USERS: User[] = mockUsers;
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { User as AppUser } from '@/models/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
+  session: Session | null;
   loading: boolean;
-  login: (userData: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
-  setRole: (role: User["role"]) => void;
-  updateAuthUser: (data: Partial<User>) => void;
-  mockUsers: User[];
+  updateAuthUser: (data: Partial<AppUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,48 +24,67 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session on mount
   useEffect(() => {
-    setLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch user profile from database
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setUser(profile);
+          }
+        } else {
+          setUser(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // This will trigger the auth state change listener above
+        setSession(session);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      setUser(null);
+      setSession(null);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-  };
-
-  const setRole = (role: User['role']) => {
-    setUser((prev) =>
-      prev
-        ? {
-            ...prev,
-            role,
-            vacation_days_balance: role === "rrhh" ? 30 : prev.vacation_days_balance,
-            sick_days_balance: role === "rrhh" ? 15 : prev.sick_days_balance,
-          }
-        : null
-    );
-  };
-
-  const updateAuthUser = (data: Partial<User>) => {
+  const updateAuthUser = (data: Partial<AppUser>) => {
     setUser(prev => prev ? { ...prev, ...data } : null);
   };
 
   const value = {
     user,
+    session,
     loading,
-    login,
     logout,
-    isAuthenticated: !!user,
-    setRole,
+    isAuthenticated: !!user && !!session,
     updateAuthUser,
-    mockUsers: MOCK_USERS,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

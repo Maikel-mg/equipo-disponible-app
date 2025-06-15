@@ -1,134 +1,102 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Holiday } from '@/models/types';
-
-const mockHolidays: Holiday[] = [
-  {
-    id: '1',
-    name: 'Año Nuevo',
-    date: '2024-01-01',
-    type: 'nacional',
-    is_mandatory: true,
-    created_by: 'system',
-    created_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: '2',
-    name: 'Día del Trabajador',
-    date: '2024-05-01',
-    type: 'nacional',
-    is_mandatory: true,
-    created_by: 'system',
-    created_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: '3',
-    name: 'Fiesta Local',
-    date: '2024-06-24',
-    type: 'local',
-    is_mandatory: false,
-    created_by: 'rrhh-1',
-    created_at: '2024-01-15T00:00:00Z',
-  },
-  {
-    id: '4',
-    name: 'Vacaciones de Agosto',
-    date: '2024-08-15',
-    type: 'empresa',
-    is_mandatory: true,
-    created_by: 'rrhh-1',
-    created_at: '2024-02-01T00:00:00Z',
-  },
-];
-
-function isDuplicate(holidays: Holiday[], data: { name: string; date: string }, skipId?: string) {
-  return holidays.some(
-    h =>
-      h.name.trim().toLowerCase() === data.name.trim().toLowerCase() &&
-      h.date === data.date &&
-      (!skipId || h.id !== skipId)
-  );
-}
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useHolidays() {
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    setTimeout(() => {
-      setHolidays(mockHolidays);
-      setLoading(false);
-    }, 300);
-  }, []);
+  const { data: holidays = [], isLoading: loading, error } = useQuery({
+    queryKey: ['holidays'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('holidays')
+        .select('*')
+        .order('date', { ascending: true });
+      
+      if (error) throw error;
+      return data as Holiday[];
+    },
+  });
+
+  const createHolidayMutation = useMutation({
+    mutationFn: async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
+      const { data, error } = await supabase
+        .from('holidays')
+        .insert([{
+          ...holidayData,
+          created_by: user?.id,
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        if (error.message.includes('duplicate') || error.code === '23505') {
+          throw new Error('Festivo duplicado');
+        }
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+    },
+  });
+
+  const updateHolidayMutation = useMutation({
+    mutationFn: async ({ id, ...holidayData }: Holiday) => {
+      const { data, error } = await supabase
+        .from('holidays')
+        .update(holidayData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        if (error.message.includes('duplicate') || error.code === '23505') {
+          throw new Error('Festivo duplicado');
+        }
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+    },
+  });
+
+  const deleteHolidayMutation = useMutation({
+    mutationFn: async (holidayId: string) => {
+      const { error } = await supabase
+        .from('holidays')
+        .delete()
+        .eq('id', holidayId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+    },
+  });
 
   const createHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
-    try {
-      setLoading(true);
-      if (isDuplicate(holidays, holidayData)) {
-        throw new Error("Festivo duplicado");
-      }
-      const newHoliday: Holiday = {
-        ...holidayData,
-        id: Math.random().toString(36).substr(2, 9),
-        created_by: 'current-user',
-        created_at: new Date().toISOString(),
-      };
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setHolidays(prev => [...prev, newHoliday].sort((a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      ));
-      return newHoliday;
-    } catch (err) {
-      setError('Error al crear el día festivo');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return createHolidayMutation.mutateAsync(holidayData);
   };
 
   const updateHoliday = async (id: string, updated: Omit<Holiday, "id" | "created_at" | "created_by">) => {
-    try {
-      setLoading(true);
-      if (isDuplicate(holidays, updated, id)) {
-        throw new Error("Festivo duplicado");
-      }
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setHolidays(prev =>
-        prev.map(h =>
-          h.id === id
-            ? {
-                ...h,
-                ...updated,
-              }
-            : h
-        )
-      );
-    } catch (err) {
-      setError('Error al actualizar el día festivo');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return updateHolidayMutation.mutateAsync({ id, ...updated } as Holiday);
   };
 
   const deleteHoliday = async (holidayId: string) => {
-    try {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setHolidays(prev => prev.filter(holiday => holiday.id !== holidayId));
-    } catch (err) {
-      setError('Error al eliminar el día festivo');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    return deleteHolidayMutation.mutateAsync(holidayId);
   };
 
   return {
     holidays,
-    loading,
-    error,
+    loading: loading || createHolidayMutation.isPending || updateHolidayMutation.isPending || deleteHolidayMutation.isPending,
+    error: error?.message || null,
     createHoliday,
     updateHoliday,
     deleteHoliday,
