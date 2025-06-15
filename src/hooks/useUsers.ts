@@ -149,7 +149,6 @@ export function useUsers() {
     teams,
     loading,
     error,
-    createUser: async () => { throw new Error('Los usuarios se crean mediante registro'); },
     updateUser,
     deleteUser,
     createTeam,

@@ -162,7 +162,7 @@ function UserForm({
 
 export function UserManagement() {
   const { user } = useAuth();
-  const { users, teams, loading, createUser, updateUser, deleteUser } = useUsers();
+  const { users, teams, loading, updateUser, deleteUser } = useUsers();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -180,11 +180,6 @@ export function UserManagement() {
       </div>
     );
   }
-
-  const handleCreateUser = async (data: UserFormData) => {
-    await createUser(data);
-    setDialogOpen(false);
-  };
 
   const handleUpdateUser = async (data: UserFormData) => {
     if (editingUser) {
@@ -211,21 +206,10 @@ export function UserManagement() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h2>
           <p className="text-gray-600">Administra los usuarios y sus equipos</p>
+          <p className="text-sm text-blue-600 mt-1">
+            Nota: Los usuarios se crean mediante el proceso de registro
+          </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingUser(null)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Usuario
-            </Button>
-          </DialogTrigger>
-          <UserForm
-            onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-            onClose={() => setDialogOpen(false)}
-            teams={teams}
-            initialData={editingUser || undefined}
-          />
-        </Dialog>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -243,39 +227,49 @@ export function UserManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+            {users.map((userItem) => (
+              <TableRow key={userItem.id}>
+                <TableCell className="font-medium">{userItem.name}</TableCell>
+                <TableCell>{userItem.email}</TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                    ${user.role === 'rrhh' ? 'bg-purple-100 text-purple-800' : ''}
-                    ${user.role === 'responsable' ? 'bg-blue-100 text-blue-800' : ''}
-                    ${user.role === 'empleado' ? 'bg-green-100 text-green-800' : ''}
+                    ${userItem.role === 'rrhh' ? 'bg-purple-100 text-purple-800' : ''}
+                    ${userItem.role === 'responsable' ? 'bg-blue-100 text-blue-800' : ''}
+                    ${userItem.role === 'empleado' ? 'bg-green-100 text-green-800' : ''}
                   `}>
-                    {user.role}
+                    {userItem.role}
                   </span>
                 </TableCell>
-                <TableCell>{getTeamName(user.team_id)}</TableCell>
-                <TableCell>{user.vacation_days_balance}</TableCell>
-                <TableCell>{user.sick_days_balance}</TableCell>
-                <TableCell>{formatDate(user.created_at, 'dd/MM/yyyy')}</TableCell>
+                <TableCell>{getTeamName(userItem.team_id)}</TableCell>
+                <TableCell>{userItem.vacation_days_balance}</TableCell>
+                <TableCell>{userItem.sick_days_balance}</TableCell>
+                <TableCell>{formatDate(userItem.created_at, 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
+                    <Dialog open={dialogOpen && editingUser?.id === userItem.id} onOpenChange={setDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingUser(userItem);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <UserForm
+                        onSubmit={handleUpdateUser}
+                        onClose={() => setDialogOpen(false)}
+                        teams={teams}
+                        initialData={editingUser || undefined}
+                      />
+                    </Dialog>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setEditingUser(user);
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
+                      onClick={() => handleDeleteUser(userItem.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />

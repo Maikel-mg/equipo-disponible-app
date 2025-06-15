@@ -43,7 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single();
           
           if (profile) {
-            setUser(profile);
+            // Type assertion to ensure role is correctly typed
+            const typedProfile: AppUser = {
+              ...profile,
+              role: profile.role as 'empleado' | 'responsable' | 'rrhh'
+            };
+            setUser(typedProfile);
           }
         } else {
           setUser(null);
