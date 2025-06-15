@@ -61,6 +61,20 @@ function UserForm({
     sick_days_balance: initialData?.sick_days_balance || 3,
   });
 
+  // Update form when initialData changes
+  React.useEffect(() => {
+    if (initialData) {
+      setForm({
+        name: initialData.name,
+        email: initialData.email,
+        role: initialData.role,
+        team_id: initialData.team_id || 'no-team',
+        vacation_days_balance: initialData.vacation_days_balance,
+        sick_days_balance: initialData.sick_days_balance,
+      });
+    }
+  }, [initialData]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const submitData = {
@@ -209,6 +223,16 @@ export function UserManagement() {
     }
   };
 
+  const handleEditClick = (userItem: User) => {
+    setEditingUser(userItem);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+    setEditingUser(null);
+  };
+
   const getTeamName = (teamId?: string) => {
     const team = teams.find(t => t.id === teamId);
     return team?.name || 'Sin equipo';
@@ -261,26 +285,13 @@ export function UserManagement() {
                 <TableCell>{formatDate(userItem.created_at, 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Dialog open={editDialogOpen && editingUser?.id === userItem.id} onOpenChange={setEditDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingUser(userItem);
-                            setEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <UserForm
-                        onSubmit={handleUpdateUser}
-                        onClose={() => setEditDialogOpen(false)}
-                        teams={teams}
-                        initialData={editingUser || undefined}
-                      />
-                    </Dialog>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditClick(userItem)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -301,6 +312,15 @@ export function UserManagement() {
           </div>
         )}
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <UserForm
+          onSubmit={handleUpdateUser}
+          onClose={handleEditClose}
+          teams={teams}
+          initialData={editingUser || undefined}
+        />
+      </Dialog>
 
       <CreateUserForm
         isOpen={createDialogOpen}
