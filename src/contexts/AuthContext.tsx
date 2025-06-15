@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { User as AppUser } from '@/models/types';
@@ -27,7 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   const createUserProfile = async (authUser: User) => {
     try {
@@ -90,10 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (initialized) return;
-    
     console.log('Initializing auth context...');
-    setInitialized(true);
 
     const initializeAuth = async () => {
       try {
@@ -128,9 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
         
-        if (initialized) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     );
 
@@ -141,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const logout = async () => {
     console.log('Logging out...');
@@ -174,7 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userEmail: user?.email, 
     loading, 
     isAuthenticated: !!user && !!session,
-    initialized
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
