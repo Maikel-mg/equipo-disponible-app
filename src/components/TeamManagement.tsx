@@ -53,8 +53,11 @@ function TeamForm({
     manager_id: initialData?.manager_id || '',
   });
 
+  console.log('TeamForm initialized with:', { initialData, form });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('TeamForm submitting:', form);
     onSubmit(form);
   };
 
@@ -110,6 +113,8 @@ export function TeamManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
+  console.log('TeamManagement render:', { dialogOpen, editingTeam: editingTeam?.id });
+
   // Solo RRHH puede gestionar equipos
   if (user?.role !== 'rrhh') {
     return (
@@ -126,21 +131,59 @@ export function TeamManagement() {
   }
 
   const handleCreateTeam = async (data: TeamFormData) => {
-    await createTeam(data);
-    setDialogOpen(false);
+    console.log('Creating team with data:', data);
+    try {
+      await createTeam(data);
+      setDialogOpen(false);
+      setEditingTeam(null);
+      console.log('Team created successfully');
+    } catch (error) {
+      console.error('Error creating team:', error);
+    }
   };
 
   const handleUpdateTeam = async (data: TeamFormData) => {
+    console.log('Updating team with data:', { teamId: editingTeam?.id, data });
     if (editingTeam) {
-      await updateTeam(editingTeam.id, data);
-      setEditingTeam(null);
-      setDialogOpen(false);
+      try {
+        await updateTeam(editingTeam.id, data);
+        setEditingTeam(null);
+        setDialogOpen(false);
+        console.log('Team updated successfully');
+      } catch (error) {
+        console.error('Error updating team:', error);
+      }
     }
   };
 
   const handleDeleteTeam = async (teamId: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar este equipo? Los usuarios asignados perderán su asignación de equipo.')) {
-      await deleteTeam(teamId);
+      try {
+        await deleteTeam(teamId);
+        console.log('Team deleted successfully');
+      } catch (error) {
+        console.error('Error deleting team:', error);
+      }
+    }
+  };
+
+  const handleEditClick = (team: Team) => {
+    console.log('Edit button clicked for team:', team);
+    setEditingTeam(team);
+    setDialogOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    console.log('Create button clicked');
+    setEditingTeam(null);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    console.log('Dialog close requested:', open);
+    setDialogOpen(open);
+    if (!open) {
+      setEditingTeam(null);
     }
   };
 
@@ -160,16 +203,16 @@ export function TeamManagement() {
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Equipos</h2>
           <p className="text-gray-600">Administra los equipos y sus responsables</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingTeam(null)}>
+            <Button onClick={handleCreateClick}>
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Equipo
             </Button>
           </DialogTrigger>
           <TeamForm
             onSubmit={editingTeam ? handleUpdateTeam : handleCreateTeam}
-            onClose={() => setDialogOpen(false)}
+            onClose={() => handleDialogClose(false)}
             users={users}
             initialData={editingTeam || undefined}
           />
@@ -208,10 +251,7 @@ export function TeamManagement() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setEditingTeam(team);
-                        setDialogOpen(true);
-                      }}
+                      onClick={() => handleEditClick(team)}
                       title="Editar equipo"
                     >
                       <Edit className="w-4 h-4" />
