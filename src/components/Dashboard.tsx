@@ -10,7 +10,9 @@ import {
   CheckCircle, 
   Users, 
   TrendingUp,
-  FileText
+  FileText,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { NewRequestModal } from './NewRequestModal';
@@ -40,45 +42,72 @@ export function Dashboard() {
       value: user?.vacation_days_balance || 0,
       icon: Calendar,
       color: 'blue',
-      subtitle: 'disponibles'
+      subtitle: 'disponibles',
+      gradient: 'from-blue-500 to-cyan-500'
     },
     {
       title: 'Solicitudes pendientes',
       value: pendingRequests,
       icon: Clock,
       color: 'amber',
-      subtitle: 'por revisar'
+      subtitle: 'por revisar',
+      gradient: 'from-amber-500 to-orange-500'
     },
     {
       title: 'Aprobadas este mes',
       value: approvedThisMonth,
       icon: CheckCircle,
       color: 'green',
-      subtitle: 'solicitudes'
+      subtitle: 'solicitudes',
+      gradient: 'from-green-500 to-emerald-500'
     },
     {
       title: 'Días de enfermedad',
       value: user?.sick_days_balance || 0,
       icon: FileText,
-      color: 'red',
-      subtitle: 'disponibles'
+      color: 'purple',
+      subtitle: 'disponibles',
+      gradient: 'from-purple-500 to-pink-500'
     }
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6 bg-gradient-to-br from-gray-50 to-blue-50/30 min-h-screen">
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="w-8 h-8" />
+            <h1 className="text-3xl font-bold">¡Bienvenido de vuelta, {user?.name}!</h1>
+          </div>
+          <p className="text-blue-100 text-lg">
+            Tienes {pendingRequests} solicitudes pendientes y {user?.vacation_days_balance || 0} días de vacaciones disponibles.
+          </p>
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.title} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 card-hover">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
+        {stats.map((stat, index) => (
+          <div key={stat.title} className="group">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200/50">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.subtitle}</p>
+                </div>
+                <div className={`p-4 rounded-2xl bg-gradient-to-r ${stat.gradient} group-hover:scale-110 transition-transform duration-300`}>
+                  <stat.icon className="w-7 h-7 text-white" />
+                </div>
               </div>
-              <div className={`p-3 rounded-lg bg-${stat.color}-100`}>
-                <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 bg-gradient-to-r ${stat.gradient} rounded-full transition-all duration-500`}
+                  style={{ width: `${Math.min((stat.value / 30) * 100, 100)}%` }}
+                ></div>
               </div>
             </div>
           </div>
@@ -86,17 +115,27 @@ export function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Requests */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Solicitudes Recientes</h3>
-            <TrendingUp className="w-5 h-5 text-gray-400" />
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Solicitudes Recientes</h3>
+            </div>
+            <button 
+              onClick={() => navigate('/requests')}
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors"
+            >
+              Ver todas <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
           
           <div className="space-y-4">
             {recentRequests.map((request) => (
-              <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50/80 rounded-xl hover:bg-gray-100/80 transition-colors">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{request.user_name}</p>
                   <p className="text-xs text-gray-500 capitalize">{request.type}</p>
@@ -107,37 +146,50 @@ export function Dashboard() {
                     </span>
                   </p>
                 </div>
-                <span className={`status-${request.status}`}>
+                <span className={`status-${request.status} px-3 py-1 rounded-full text-xs font-medium`}>
                   {request.status}
                 </span>
               </div>
             ))}
             
             {recentRequests.length === 0 && (
-              <p className="text-center text-gray-500 py-8">No hay solicitudes recientes</p>
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No hay solicitudes recientes</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* Upcoming Holidays */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Próximos Festivos</h3>
-            <Calendar className="w-5 h-5 text-gray-400" />
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                <Calendar className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Próximos Festivos</h3>
+            </div>
+            <button 
+              onClick={() => navigate('/calendar')}
+              className="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1 transition-colors"
+            >
+              Ver calendario <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
           
           <div className="space-y-4">
             {upcomingHolidays.map((holiday) => (
-              <div key={holiday.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div key={holiday.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{holiday.name}</p>
-                  <p className="text-xs text-blue-600 capitalize">{holiday.type}</p>
+                  <p className="text-xs text-purple-600 capitalize font-medium">{holiday.type}</p>
                   <p className="text-xs text-gray-500">
                     {formatDate(holiday.date)}
                   </p>
                 </div>
                 {holiday.is_mandatory && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
                     Obligatorio
                   </span>
                 )}
@@ -145,42 +197,50 @@ export function Dashboard() {
             ))}
             
             {upcomingHolidays.length === 0 && (
-              <p className="text-center text-gray-500 py-8">No hay festivos próximos</p>
+              <div className="text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No hay festivos próximos</p>
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-6 border border-blue-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => setShowNewRequestModal(true)}
-            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
-          >
-            <FileText className="w-6 h-6 text-blue-600 mb-2" />
-            <p className="font-medium text-gray-900">Nueva Solicitud</p>
-            <p className="text-xs text-gray-500">Pedir días libres</p>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/calendar')}
-            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
-          >
-            <Calendar className="w-6 h-6 text-green-600 mb-2" />
-            <p className="font-medium text-gray-900">Ver Calendario</p>
-            <p className="text-xs text-gray-500">Planificar ausencias</p>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/team')}
-            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
-          >
-            <Users className="w-6 h-6 text-purple-600 mb-2" />
-            <p className="font-medium text-gray-900">Estado del Equipo</p>
-            <p className="text-xs text-gray-500">Ver disponibilidad</p>
-          </button>
+      <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-16 -translate-x-16"></div>
+        <div className="relative">
+          <h3 className="text-2xl font-bold mb-2">Acciones Rápidas</h3>
+          <p className="text-indigo-100 mb-8">Gestiona tus solicitudes y revisa la información del equipo</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button 
+              onClick={() => setShowNewRequestModal(true)}
+              className="group bg-white/20 backdrop-blur-sm p-6 rounded-2xl hover:bg-white/30 transition-all duration-300 text-left border border-white/20"
+            >
+              <FileText className="w-8 h-8 mb-4 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-lg mb-2">Nueva Solicitud</p>
+              <p className="text-sm text-indigo-100">Pedir días libres</p>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/calendar')}
+              className="group bg-white/20 backdrop-blur-sm p-6 rounded-2xl hover:bg-white/30 transition-all duration-300 text-left border border-white/20"
+            >
+              <Calendar className="w-8 h-8 mb-4 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-lg mb-2">Ver Calendario</p>
+              <p className="text-sm text-indigo-100">Planificar ausencias</p>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/team')}
+              className="group bg-white/20 backdrop-blur-sm p-6 rounded-2xl hover:bg-white/30 transition-all duration-300 text-left border border-white/20"
+            >
+              <Users className="w-8 h-8 mb-4 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-lg mb-2">Estado del Equipo</p>
+              <p className="text-sm text-indigo-100">Ver disponibilidad</p>
+            </button>
+          </div>
         </div>
       </div>
 
