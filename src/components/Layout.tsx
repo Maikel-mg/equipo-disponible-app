@@ -13,6 +13,8 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, loading } = useAuth();
 
+  console.log('Layout render:', { user: user?.email, loading });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -25,9 +27,11 @@ export function Layout({ children }: LayoutProps) {
   }
 
   if (!user) {
+    console.log('No user found, showing AuthScreen');
     return <AuthScreen />;
   }
 
+  console.log('User authenticated, showing main app');
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

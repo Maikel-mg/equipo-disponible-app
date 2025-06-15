@@ -29,27 +29,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Setting up auth listener...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         
         if (session?.user) {
-          // Fetch user profile from database
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            // Type assertion to ensure role is correctly typed
-            const typedProfile: AppUser = {
-              ...profile,
-              role: profile.role as 'empleado' | 'responsable' | 'rrhh'
-            };
-            setUser(typedProfile);
-          }
+          // Use setTimeout to prevent potential recursion issues
+          setTimeout(async () => {
+            try {
+              console.log('Fetching user profile for:', session.user.id);
+              
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (error) {
+                console.error('Error fetching profile:', error);
+                
+                // If profile doesn't exist, create it
+                if (error.code === 'PGRST116') {
+                  console.log('Profile not found, creating one...');
+                  const { data: newProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
+                      role: 'empleado' as const,
+                      vacation_days_balance: 22,
+                      sick_days_balance: 3,
+                    }])
+                    .select()
+                    .single();
+                  
+                  if (createError) {
+                    console.error('Error creating profile:', createError);
+                  } else {
+                    console.log('Profile created successfully:', newProfile);
+                    setUser(newProfile as AppUser);
+                  }
+                }
+              } else {
+                console.log('Profile fetched successfully:', profile);
+                const typedProfile: AppUser = {
+                  ...profile,
+                  role: profile.role as 'empleado' | 'responsable' | 'rrhh'
+                };
+                setUser(typedProfile);
+              }
+            } catch (err) {
+              console.error('Unexpected error in auth handler:', err);
+            }
+          }, 0);
         } else {
           setUser(null);
         }
@@ -60,18 +97,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        // This will trigger the auth state change listener above
-        setSession(session);
-      } else {
+      console.log('Initial session check:', session?.user?.email);
+      if (!session) {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
+    console.log('Logging out...');
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);
@@ -91,6 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user && !!session,
     updateAuthUser,
   };
+
+  console.log('AuthContext render:', { user: user?.email, loading, isAuthenticated: !!user && !!session });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

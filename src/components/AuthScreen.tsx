@@ -22,19 +22,28 @@ export function AuthScreen() {
 
     setLoading(true);
     try {
+      console.log('Attempting sign in for:', email);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Sign in error:', error);
         toast({
           variant: "destructive",
           title: "Error al iniciar sesión",
           description: error.message,
         });
+      } else {
+        console.log('Sign in successful');
+        toast({
+          title: "Bienvenido",
+          description: "Has iniciado sesión correctamente.",
+        });
       }
     } catch (error) {
+      console.error('Unexpected sign in error:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -51,7 +60,8 @@ export function AuthScreen() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting sign up for:', email);
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -63,6 +73,7 @@ export function AuthScreen() {
       });
 
       if (error) {
+        console.error('Sign up error:', error);
         if (error.message.includes('User already registered')) {
           toast({
             variant: "destructive",
@@ -77,12 +88,21 @@ export function AuthScreen() {
           });
         }
       } else {
-        toast({
-          title: "Registro exitoso",
-          description: "Revisa tu email para confirmar tu cuenta.",
-        });
+        console.log('Sign up successful:', data);
+        if (data.user && !data.session) {
+          toast({
+            title: "Registro exitoso",
+            description: "Revisa tu email para confirmar tu cuenta.",
+          });
+        } else {
+          toast({
+            title: "Registro exitoso",
+            description: "Tu cuenta ha sido creada correctamente.",
+          });
+        }
       }
     } catch (error) {
+      console.error('Unexpected sign up error:', error);
       toast({
         variant: "destructive",
         title: "Error",
