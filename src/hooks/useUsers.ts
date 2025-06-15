@@ -32,6 +32,51 @@ export function useUsers() {
     },
   });
 
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: { 
+      email: string; 
+      password: string; 
+      name: string; 
+      role: User['role']; 
+      team_id?: string;
+      vacation_days_balance?: number;
+      sick_days_balance?: number;
+    }) => {
+      // Crear usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        email_confirm: true,
+        user_metadata: {
+          name: userData.name
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Crear perfil en la tabla profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: authData.user.id,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role,
+          team_id: userData.team_id || null,
+          vacation_days_balance: userData.vacation_days_balance || 22,
+          sick_days_balance: userData.sick_days_balance || 3,
+        }])
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+      return profileData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
       const { data, error } = await supabase
@@ -118,6 +163,18 @@ export function useUsers() {
     },
   });
 
+  const createUser = async (userData: { 
+    email: string; 
+    password: string; 
+    name: string; 
+    role: User['role']; 
+    team_id?: string;
+    vacation_days_balance?: number;
+    sick_days_balance?: number;
+  }) => {
+    return createUserMutation.mutateAsync(userData);
+  };
+
   const updateUser = async (userId: string, userData: Partial<User>) => {
     return updateUserMutation.mutateAsync({ userId, userData });
   };
@@ -139,7 +196,7 @@ export function useUsers() {
   };
 
   const loading = usersLoading || teamsLoading || 
-    updateUserMutation.isPending || deleteUserMutation.isPending ||
+    createUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending ||
     createTeamMutation.isPending || updateTeamMutation.isPending || deleteTeamMutation.isPending;
 
   const error = usersError?.message || teamsError?.message || null;
@@ -149,6 +206,7 @@ export function useUsers() {
     teams,
     loading,
     error,
+    createUser,
     updateUser,
     deleteUser,
     createTeam,

@@ -28,8 +28,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, UserPlus } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { CreateUserForm } from './CreateUserForm';
 
 interface UserFormData {
   name: string;
@@ -72,7 +73,7 @@ function UserForm({
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>{initialData ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+        <DialogTitle>Editar Usuario</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -152,7 +153,7 @@ function UserForm({
             Cancelar
           </Button>
           <Button type="submit">
-            {initialData ? 'Actualizar' : 'Crear'}
+            Actualizar
           </Button>
         </div>
       </form>
@@ -162,8 +163,9 @@ function UserForm({
 
 export function UserManagement() {
   const { user } = useAuth();
-  const { users, teams, loading, updateUser, deleteUser } = useUsers();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const { users, teams, loading, createUser, updateUser, deleteUser } = useUsers();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   // Solo RRHH puede gestionar usuarios
@@ -181,11 +183,23 @@ export function UserManagement() {
     );
   }
 
+  const handleCreateUser = async (data: {
+    name: string;
+    email: string;
+    password: string;
+    role: User['role'];
+    team_id?: string;
+    vacation_days_balance: number;
+    sick_days_balance: number;
+  }) => {
+    await createUser(data);
+  };
+
   const handleUpdateUser = async (data: UserFormData) => {
     if (editingUser) {
       await updateUser(editingUser.id, data);
       setEditingUser(null);
-      setDialogOpen(false);
+      setEditDialogOpen(false);
     }
   };
 
@@ -206,10 +220,11 @@ export function UserManagement() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h2>
           <p className="text-gray-600">Administra los usuarios y sus equipos</p>
-          <p className="text-sm text-blue-600 mt-1">
-            Nota: Los usuarios se crean mediante el proceso de registro
-          </p>
         </div>
+        <Button onClick={() => setCreateDialogOpen(true)} className="flex items-center gap-2">
+          <UserPlus className="w-4 h-4" />
+          Crear Usuario
+        </Button>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -246,14 +261,14 @@ export function UserManagement() {
                 <TableCell>{formatDate(userItem.created_at, 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Dialog open={dialogOpen && editingUser?.id === userItem.id} onOpenChange={setDialogOpen}>
+                    <Dialog open={editDialogOpen && editingUser?.id === userItem.id} onOpenChange={setEditDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
                             setEditingUser(userItem);
-                            setDialogOpen(true);
+                            setEditDialogOpen(true);
                           }}
                         >
                           <Edit className="w-4 h-4" />
@@ -261,7 +276,7 @@ export function UserManagement() {
                       </DialogTrigger>
                       <UserForm
                         onSubmit={handleUpdateUser}
-                        onClose={() => setDialogOpen(false)}
+                        onClose={() => setEditDialogOpen(false)}
                         teams={teams}
                         initialData={editingUser || undefined}
                       />
@@ -286,6 +301,13 @@ export function UserManagement() {
           </div>
         )}
       </div>
+
+      <CreateUserForm
+        isOpen={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSubmit={handleCreateUser}
+        teams={teams}
+      />
     </div>
   );
 }
