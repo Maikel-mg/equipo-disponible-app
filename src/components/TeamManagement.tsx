@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useUsers';
@@ -53,11 +53,17 @@ function TeamForm({
     manager_id: initialData?.manager_id || '',
   });
 
-  console.log('TeamForm initialized with:', { initialData, form });
+  useEffect(() => {
+    // This effect ensures the form is populated with the correct data for editing,
+    // and resets when creating a new team.
+    setForm({
+      name: initialData?.name || '',
+      manager_id: initialData?.manager_id || '',
+    });
+  }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('TeamForm submitting:', form);
     onSubmit(form);
   };
 
@@ -113,8 +119,6 @@ export function TeamManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
-  console.log('TeamManagement render:', { dialogOpen, editingTeam: editingTeam?.id });
-
   // Solo RRHH puede gestionar equipos
   if (user?.role !== 'rrhh') {
     return (
@@ -131,25 +135,21 @@ export function TeamManagement() {
   }
 
   const handleCreateTeam = async (data: TeamFormData) => {
-    console.log('Creating team with data:', data);
     try {
       await createTeam(data);
       setDialogOpen(false);
       setEditingTeam(null);
-      console.log('Team created successfully');
     } catch (error) {
       console.error('Error creating team:', error);
     }
   };
 
   const handleUpdateTeam = async (data: TeamFormData) => {
-    console.log('Updating team with data:', { teamId: editingTeam?.id, data });
     if (editingTeam) {
       try {
         await updateTeam(editingTeam.id, data);
         setEditingTeam(null);
         setDialogOpen(false);
-        console.log('Team updated successfully');
       } catch (error) {
         console.error('Error updating team:', error);
       }
@@ -160,7 +160,6 @@ export function TeamManagement() {
     if (confirm('¿Estás seguro de que quieres eliminar este equipo? Los usuarios asignados perderán su asignación de equipo.')) {
       try {
         await deleteTeam(teamId);
-        console.log('Team deleted successfully');
       } catch (error) {
         console.error('Error deleting team:', error);
       }
@@ -168,19 +167,16 @@ export function TeamManagement() {
   };
 
   const handleEditClick = (team: Team) => {
-    console.log('Edit button clicked for team:', team);
     setEditingTeam(team);
     setDialogOpen(true);
   };
 
   const handleCreateClick = () => {
-    console.log('Create button clicked');
     setEditingTeam(null);
     setDialogOpen(true);
   };
 
   const handleDialogClose = (open: boolean) => {
-    console.log('Dialog close requested:', open);
     setDialogOpen(open);
     if (!open) {
       setEditingTeam(null);
