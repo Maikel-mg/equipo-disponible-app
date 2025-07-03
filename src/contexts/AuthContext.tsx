@@ -30,25 +30,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createUserProfile = async (authUser: User) => {
     try {
       console.log('Creating user profile for:', authUser.id);
-      
+
       const { data: newProfile, error } = await supabase
         .from('profiles')
-        .insert([{
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
-          role: 'empleado' as const,
-          vacation_days_balance: 22,
-          sick_days_balance: 3,
-        }])
+        .insert([
+          {
+            id: authUser.id,
+            email: authUser.email || '',
+            name:
+              authUser.user_metadata?.name ||
+              authUser.email?.split('@')[0] ||
+              'Usuario',
+            role: 'empleado' as const,
+            vacation_days_balance: 22,
+            sick_days_balance: 3,
+          },
+        ])
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error creating profile:', error);
         return null;
       }
-      
+
       console.log('Profile created successfully:', newProfile);
       return newProfile as AppUser;
     } catch (err) {
@@ -60,13 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserProfile = async (authUser: User) => {
     try {
       console.log('Fetching user profile for:', authUser.id);
-      
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
         .single();
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           // Profile doesn't exist, create it
@@ -75,11 +80,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error fetching profile:', error);
         return null;
       }
-      
+
       console.log('Profile fetched successfully:', profile);
       return {
         ...profile,
-        role: profile.role as 'empleado' | 'responsable' | 'rrhh'
+        role: profile.role as 'empleado' | 'responsable' | 'rrhh',
       } as AppUser;
     } catch (err) {
       console.error('Unexpected error fetching profile:', err);
@@ -94,8 +99,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         try {
           // Get initial session
-          const { data: { session: initialSession } } = await supabase.auth.getSession();
-          console.log('Initial session:', initialSession?.user?.email || 'No session');
+          const {
+            data: { session: initialSession },
+          } = await supabase.auth.getSession();
+          console.log(
+            'Initial session:',
+            initialSession?.user?.email || 'No session'
+          );
 
           if (initialSession?.user) {
             const profile = await fetchUserProfile(initialSession.user);
@@ -103,7 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(profile);
               setSession(initialSession);
             } else {
-              console.error('Profile fetch failed during init, clearing session.');
+              console.error(
+                'Profile fetch failed during init, clearing session.'
+              );
               setUser(null);
               setSession(null);
             }
@@ -129,37 +141,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        console.log('Auth state changed:', event, newSession?.user?.email || 'No session');
-        
-        setLoading(true);
-        
-        // Envuelve la lógica en una función async para evitar hacer el callback async
-        const handleAuth = async () => {
-          try {
-            setSession(newSession);
-            if (newSession?.user) {
-              const profile = await fetchUserProfile(newSession.user);
-              if (profile) {
-                setUser(profile);
-              } else {
-                setUser(null);
-              }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log(
+        'Auth state changed:',
+        event,
+        newSession?.user?.email || 'No session'
+      );
+
+      setLoading(true);
+
+      // Envuelve la lógica en una función async para evitar hacer el callback async
+      const handleAuth = async () => {
+        try {
+          setSession(newSession);
+          if (newSession?.user) {
+            const profile = await fetchUserProfile(newSession.user);
+            if (profile) {
+              setUser(profile);
             } else {
               setUser(null);
             }
-          } catch (error) {
-            console.error('Error in onAuthStateChange handler:', error);
+          } else {
             setUser(null);
-          } finally {
-            setLoading(false);
           }
-        };
-    
-        handleAuth(); // Llama a la función async
-      }
-    );
+        } catch (error) {
+          console.error('Error in onAuthStateChange handler:', error);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      handleAuth(); // Llama a la función async
+    });
 
     // Initialize auth
     initializeAuth();
@@ -190,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateAuthUser = (data: Partial<AppUser>) => {
-    setUser(prev => prev ? { ...prev, ...data } : null);
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
   };
 
   const value = {
@@ -202,10 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateAuthUser,
   };
 
-  console.log('AuthContext state:', { 
-    hasUser: !!user, 
-    userEmail: user?.email, 
-    loading, 
+  console.log('AuthContext state:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    loading,
     isAuthenticated: !!user && !!session,
   });
 
