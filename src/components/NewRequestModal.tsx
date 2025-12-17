@@ -29,6 +29,7 @@ import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
+import { APP_ERRORS } from '@/config/constants';
 
 interface NewRequestModalProps {
   isOpen: boolean;
@@ -88,8 +89,13 @@ export function NewRequestModal({ isOpen, onClose }: NewRequestModalProps) {
       setFormData({ type: '', start_date: '', end_date: '', reason: '' });
       setStartDate(undefined);
       setEndDate(undefined);
-    } catch (error) {
-      toast.error('Error al crear la solicitud');
+    } catch (error: any) {
+      if (error.message === APP_ERRORS.OVERLAPPING_REQUEST) {
+        toast.error('Ya existe una solicitud para este rango de fechas. Por favor, verifica tu calendario.');
+      } else {
+        toast.error('Error al crear la solicitud');
+        console.error(error);
+      }
     } finally {
       setLoading(false);
     }
