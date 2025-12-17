@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useLeaveRequests } from './useLeaveRequests';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APP_ERRORS } from '@/config/constants';
 
 // Hoist all mocks to ensure they are available for vi.mock calls
 const { mockSupabase, updateMock, mockRequest, mockApprover } = vi.hoisted(() => {

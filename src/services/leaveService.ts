@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveRequest } from '@/models/types';
+import { LEAVE_STATUS, APP_ERRORS } from '@/config/constants';
 
 // --- Private Helper Functions (Data Access Layer) ---
 
@@ -54,6 +55,28 @@ const updateUserVacationBalance = async (userId: string, newBalance: number): Pr
   }
 };
 
+/**
+ * Checks if there are any existing requests that overlap with the given date range for a user.
+ * Returns true if an overlap exists.
+ */
+const checkRequestOverlap = async (userId: string, startDate: string, endDate: string): Promise<boolean> => {
+  // Logic: (StartA <= EndB) and (EndA >= StartB)
+  const { data, error } = await supabase
+    .from('leave_requests')
+    .select('id')
+    .eq('user_id', userId)
+    .neq('status', LEAVE_STATUS.REJECTED) // Ignore rejected requests
+    .lte('start_date', endDate)
+    .gte('end_date', startDate);
+
+  if (error) {
+    console.error('Error checking for request overlap:', error);
+    throw error;
+  }
+
+  return data && data.length > 0;
+};
+
 // --- Public Service (Business Logic Layer) ---
 
 export const leaveService = {
@@ -68,6 +91,18 @@ export const leaveService = {
   },
 
   createRequest: async (requestData: Omit<LeaveRequest, 'id' | 'created_at' | 'status'>) => {
+    // 1. Validation: Check for overlapping requests
+    const hasOverlap = await checkRequestOverlap(
+      requestData.user_id, 
+      requestData.start_date, 
+      requestData.end_date
+    );
+
+    if (hasOverlap) {
+      throw new Error(APP_ERRORS.OVERLAPPING_REQUEST);
+    }
+
+    // 2. Persist request
     const { data, error } = await supabase
       .from('leave_requests')
       .insert([requestData])
@@ -109,7 +144,7 @@ export const leaveService = {
 
     // 3. Execute Business Rules (Side Effects)
     const isVacationRequest = updatedRequest.type === 'vacaciones';
-    const isApproved = status === 'aprobada';
+    const isApproved = status === LEAVE_STATUS.APPROVED;
 
     if (isApproved && isVacationRequest) {
       try {

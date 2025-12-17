@@ -1,4 +1,3 @@
-
 import { LeaveRequest } from '@/models/types';
 
 export const LEAVE_TYPES: Array<{
@@ -26,3 +25,13 @@ export const USER_ROLES = [
   { value: 'responsable', label: 'Responsable' },
   { value: 'rrhh', label: 'RRHH' },
 ];
+
+export const LEAVE_STATUS = {
+  PENDING: 'pendiente',
+  APPROVED: 'aprobada',
+  REJECTED: 'rechazada',
+} as const;
+
+export const APP_ERRORS = {
+  OVERLAPPING_REQUEST: 'OVERLAPPING_REQUEST',
+} as const;
