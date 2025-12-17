@@ -72,12 +72,26 @@ export function useLeaveRequests() {
       if (status === 'aprobada') {
         const request = requests.find(r => r.id === requestId);
         if (request && request.type === 'vacaciones') {
-          await supabase
+          // Fetch the requester's current balance
+          const { data: requesterProfile, error: fetchError } = await supabase
             .from('profiles')
-            .update({
-              vacation_days_balance: user!.vacation_days_balance - request.days_count
-            })
-            .eq('id', request.user_id);
+            .select('vacation_days_balance')
+            .eq('id', request.user_id)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching requester profile:', fetchError);
+            throw fetchError;
+          }
+
+          if (requesterProfile) {
+            await supabase
+              .from('profiles')
+              .update({
+                vacation_days_balance: requesterProfile.vacation_days_balance - request.days_count
+              })
+              .eq('id', request.user_id);
+          }
         }
       }
 
