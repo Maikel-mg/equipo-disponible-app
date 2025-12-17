@@ -1,9 +1,7 @@
-
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LeaveRequest } from '@/models/types';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { leaveService } from '@/services/leaveService';
 
 export function useLeaveRequests() {
   const { user } = useAuth();
@@ -11,29 +9,12 @@ export function useLeaveRequests() {
 
   const { data: requests = [], isLoading: loading, error } = useQuery({
     queryKey: ['leave-requests'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as LeaveRequest[];
-    },
+    queryFn: leaveService.getRequests,
     enabled: !!user,
   });
 
   const createRequestMutation = useMutation({
-    mutationFn: async (requestData: Omit<LeaveRequest, 'id' | 'created_at' | 'status'>) => {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .insert([requestData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: leaveService.createRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
     },
@@ -49,53 +30,12 @@ export function useLeaveRequests() {
       status: LeaveRequest['status']; 
       comments?: string; 
     }) => {
-      const updateData: any = {
+      return leaveService.updateRequest({
+        requestId,
         status,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user?.id,
-      };
-      
-      if (comments) {
-        updateData.review_comments = comments;
-      }
-
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .update(updateData)
-        .eq('id', requestId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-
-      // If approved vacation request, update user's balance
-      if (status === 'aprobada') {
-        const request = requests.find(r => r.id === requestId);
-        if (request && request.type === 'vacaciones') {
-          // Fetch the requester's current balance
-          const { data: requesterProfile, error: fetchError } = await supabase
-            .from('profiles')
-            .select('vacation_days_balance')
-            .eq('id', request.user_id)
-            .single();
-
-          if (fetchError) {
-            console.error('Error fetching requester profile:', fetchError);
-            throw fetchError;
-          }
-
-          if (requesterProfile) {
-            await supabase
-              .from('profiles')
-              .update({
-                vacation_days_balance: requesterProfile.vacation_days_balance - request.days_count
-              })
-              .eq('id', request.user_id);
-          }
-        }
-      }
-
-      return data;
+        comments,
+        reviewerId: user?.id
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });

@@ -24,7 +24,7 @@ const { mockSupabase, updateMock, mockRequest, mockApprover } = vi.hoisted(() =>
   const updateMock = vi.fn(() => ({
     eq: vi.fn(() => ({
       select: vi.fn(() => ({
-        single: vi.fn(() => ({ data: {}, error: null }))
+        single: vi.fn(() => ({ data: mockRequest, error: null }))
       }))
     }))
   }));

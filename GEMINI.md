@@ -56,3 +56,6 @@ The application is structured as a single-page application (SPA). The frontend i
 *   **Routing:** React Router is used for client-side routing.
 *   **Code Quality:** ESLint is used for static code analysis to enforce code quality and consistency.
 *   **Path Aliases:** The project uses a path alias `@` which resolves to the `src` directory.
+*   **Semantic Code (DDD-lite):** Code should describe the *business intent* (what it does), not just the implementation (how it does it).
+    *   Avoid raw DB calls in main business logic flows. Extract them to helper functions with descriptive names (e.g., `getUserVacationBalance` instead of a raw `select`).
+    *   Use specific types/interfaces for inputs and outputs.
