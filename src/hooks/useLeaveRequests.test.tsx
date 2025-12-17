@@ -142,3 +142,110 @@ describe('useLeaveRequests Bug Reproduction', () => {
     expect(updateArg.vacation_days_balance).toBe(expectedCorrectBalance);
   });
 });
+
+// New test suite for overlap validation
+describe('leaveService Overlap Validation', () => {
+  const MOCK_USER_ID = 'test_user_id';
+  const MOCK_EXISTING_REQUEST_ID = 'existing_req_1';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Setup a mock for supabase.from('leave_requests').select().eq().in().ov().data
+    mockSupabase.from.mockImplementation((table) => {
+      if (table === 'leave_requests') {
+        return {
+          select: vi.fn(() => ({
+            // This mock is specifically for the overlap check query
+            // It should return a single existing request that overlaps
+            filter: vi.fn(() => ({
+              or: vi.fn(() => ({
+                neq: vi.fn(() => ({
+                  eq: vi.fn((column, value) => {
+                    if (column === 'user_id' && value === MOCK_USER_ID) {
+                      return {
+                        in: vi.fn(() => ({
+                          // Simulate an overlapping request
+                          data: [{
+                            id: MOCK_EXISTING_REQUEST_ID,
+                            user_id: MOCK_USER_ID,
+                            start_date: '2024-03-10',
+                            end_date: '2024-03-15',
+                            status: 'aprobada',
+                            type: 'vacaciones',
+                            days_count: 5,
+                            created_at: '2024-03-01T00:00:00Z',
+                          }],
+                          error: null,
+                        })),
+                      };
+                    }
+                    // Fallback for other select calls if needed
+                    return { data: [], error: null };
+                  }),
+                }))
+              }))
+            }))
+            ,
+            // Default select for getRequests if not specifically mocked above
+            order: vi.fn(() => ({ data: [], error: null })),
+          })),
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn(() => ({ data: {}, error: null }))
+            }))
+          })),
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn(() => ({ data: {}, error: null }))
+              }))
+            }))
+          })),
+        };
+      }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => ({ data: { vacation_days_balance: 10 }, error: null }))
+            }))
+          })),
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => ({ data: {}, error: null }))
+            }))
+          })),
+        };
+      }
+      return {};
+    });
+  });
+
+  it('should prevent creating a request that overlaps with an existing one', async () => {
+    const { result } = renderHook(() => useLeaveRequests(), {
+      wrapper: createWrapper(),
+    });
+
+    const overlappingRequestData = {
+      user_id: MOCK_USER_ID,
+      start_date: '2024-03-14', // Overlaps with 2024-03-10 to 2024-03-15
+      end_date: '2024-03-18',
+      type: 'vacaciones',
+      days_count: 5,
+    };
+
+    let caughtError: any;
+    await act(async () => {
+      try {
+        await result.current.createRequest(overlappingRequestData as any);
+      } catch (error) {
+        caughtError = error;
+      }
+    });
+
+    // We expect an error to be thrown
+    expect(caughtError).toBeDefined();
+    // And we expect the insert operation NOT to have been called
+    expect(mockSupabase.from('leave_requests').insert).not.toHaveBeenCalled();
+  });
+});
