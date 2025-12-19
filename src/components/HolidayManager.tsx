@@ -10,6 +10,9 @@ import { Holiday } from '@/models/types';
 import { useToast } from '@/hooks/use-toast';
 import { exportToCSV, exportToJSON } from '@/utils/exportHolidays';
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IntensiveManager } from './IntensiveManager';
+
 export function HolidayManager() {
   const { holidays, loading, createHoliday, updateHoliday, deleteHoliday } = useHolidays();
   const { user } = useAuth();
@@ -21,6 +24,8 @@ export function HolidayManager() {
 
   // Verificar si el usuario puede gestionar festivos (solo responsable y rrhh)
   const canManageHolidays = user?.role === 'responsable' || user?.role === 'rrhh';
+
+  // ... (rest of helper functions same as before)
 
   // NUEVO: Lógica para crear o editar
   const handleSubmitHoliday = async (holidayData: Omit<Holiday, 'id' | 'created_at' | 'created_by'>) => {
@@ -151,7 +156,7 @@ export function HolidayManager() {
             Calendario Laboral
           </h1>
           <p className="text-gray-600 mt-1">
-            {canManageHolidays ? 'Gestiona los días festivos y no laborables del año' : 'Consulta los días festivos y no laborables del año'}
+            {canManageHolidays ? 'Gestiona los días festivos y jornadas del año' : 'Consulta los días festivos y jornadas del año'}
           </p>
         </div>
         
@@ -200,96 +205,109 @@ export function HolidayManager() {
         )}
       </div>
 
-      {/* Botón de eliminar seleccionados - solo para gestores */}
-      {canManageHolidays && selectedHolidays.length > 0 && (
-        <div className="flex items-center gap-4 bg-red-50 border border-red-200 rounded-md px-4 py-2">
-          <span className="text-sm font-medium text-red-800">{selectedHolidays.length} festivos seleccionados</span>
-          <Button
-            variant="destructive"
-            onClick={() => handleDeleteSelectedHolidays()}
-            className="flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Eliminar seleccionados
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setSelectedHolidays([])}
-          >
-            Cancelar selección
-          </Button>
-        </div>
-      )}
+      <Tabs defaultValue="holidays" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+          <TabsTrigger value="holidays">Días Festivos</TabsTrigger>
+          <TabsTrigger value="intensive">Jornada Intensiva</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="holidays" className="space-y-6 mt-6">
+          {/* Botón de eliminar seleccionados - solo para gestores */}
+          {canManageHolidays && selectedHolidays.length > 0 && (
+            <div className="flex items-center gap-4 bg-red-50 border border-red-200 rounded-md px-4 py-2">
+              <span className="text-sm font-medium text-red-800">{selectedHolidays.length} festivos seleccionados</span>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteSelectedHolidays()}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Eliminar seleccionados
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setSelectedHolidays([])}
+              >
+                Cancelar selección
+              </Button>
+            </div>
+          )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <Calendar className="w-8 h-8 text-blue-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Total Festivos</p>
-              <p className="text-2xl font-bold text-gray-900">{holidays.length}</p>
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <Calendar className="w-8 h-8 text-blue-600" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600">Total Festivos</p>
+                  <p className="text-2xl font-bold text-gray-900">{holidays.length}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600">Nacionales</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {holidays.filter(h => h.type === 'nacional').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600">Autonómicos</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {holidays.filter(h => h.type === 'autonomico').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600">Empresa</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {holidays.filter(h => h.type === 'empresa').length}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Nacionales</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {holidays.filter(h => h.type === 'nacional').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Autonómicos</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {holidays.filter(h => h.type === 'autonomico').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-              <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Empresa</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {holidays.filter(h => h.type === 'empresa').length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Holiday Table */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6">
-          <HolidayTable
-            holidays={holidays}
-            onEdit={canManageHolidays ? handleEditHoliday : undefined}
-            onDelete={canManageHolidays ? handleDeleteHoliday : undefined}
-            loading={loading}
-            onSelectionChange={canManageHolidays ? setSelectedHolidays : undefined}
-            selectedIds={canManageHolidays ? selectedHolidays : []}
-            onDeleteSelected={canManageHolidays ? handleDeleteSelectedHolidays : undefined}
-          />
-        </div>
-      </div>
+          {/* Holiday Table */}
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="p-6">
+              <HolidayTable
+                holidays={holidays}
+                onEdit={canManageHolidays ? handleEditHoliday : undefined}
+                onDelete={canManageHolidays ? handleDeleteHoliday : undefined}
+                loading={loading}
+                onSelectionChange={canManageHolidays ? setSelectedHolidays : undefined}
+                selectedIds={canManageHolidays ? selectedHolidays : []}
+                onDeleteSelected={canManageHolidays ? handleDeleteSelectedHolidays : undefined}
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="intensive" className="mt-6">
+          <IntensiveManager />
+        </TabsContent>
+      </Tabs>
 
       {/* Holiday Form Modal - solo para gestores */}
       {canManageHolidays && (

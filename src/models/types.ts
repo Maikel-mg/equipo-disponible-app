@@ -1,3 +1,20 @@
+export type DayType = 'WORKDAY_FULL' | 'WORKDAY_INTENSIVE' | 'HOLIDAY' | 'WEEKEND';
+
+export interface CalendarConfig {
+  id: string;
+  year: number;
+  summer_start_date: string;
+  summer_end_date: string;
+  created_at?: string;
+}
+
+export interface SpecialWorkday {
+  id: string;
+  date: string;
+  type: 'intensiva';
+  description?: string;
+  created_at?: string;
+}
 
 export interface User {
   id: string;

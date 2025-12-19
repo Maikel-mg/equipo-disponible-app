@@ -35,7 +35,7 @@ const navigation = [
   { name: 'Usuarios', href: '/users', icon: UserCog, roles: ['rrhh'] },
   { name: 'Equipos', href: '/teams', icon: UsersIcon, roles: ['rrhh'] },
   { name: 'Reportes', href: '/reports', icon: BarChart3, roles: ['rrhh'] },
-  { name: 'Configuración', href: '/settings', icon: Settings, roles: ['rrhh'] },
+  { name: 'Calendario Laboral', href: '/settings/calendar', icon: Settings, roles: ['rrhh'] },
 ];
 
 export function AppSidebar() {

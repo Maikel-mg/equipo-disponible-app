@@ -49,7 +49,7 @@ const App = () => (
                 <Route path="/teams" element={<TeamManagement />} />
                 <Route path="/teams/:teamId" element={<TeamDetailPage />} />
                 <Route path="/reports" element={<MonthlyReport />} />
-                <Route path="/settings" element={<div className="p-8 text-center"><h2 className="text-2xl font-bold">Configuración</h2><p className="text-gray-600 mt-2">En desarrollo...</p></div>} />
+                <Route path="/settings/calendar" element={<HolidayManager />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

@@ -10,12 +10,16 @@ import { formatDate } from '@/lib/utils';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { CalendarFilters } from '@/components/CalendarFilters';
 
+import { useCalendarConfig } from '@/hooks/useCalendarConfig';
+import { calendarService } from '@/services/calendarService';
+
 export function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [filters, setFilters] = useState({
     holidays: true,
+    intensive_workday: true,
     vacations: true,
     sickness: true,
     personal: true,
@@ -25,6 +29,7 @@ export function CalendarView() {
 
   const { requests } = useLeaveRequests();
   const { holidays } = useHolidays();
+  const { config, specialDays } = useCalendarConfig(currentMonth.getFullYear());
   const { user } = useAuth();
 
   const monthNames = [
@@ -72,6 +77,20 @@ export function CalendarView() {
           title: holiday.name,
           color: 'bg-blue-100 text-blue-800',
           data: holiday,
+        });
+      }
+    }
+
+    // Check for intensive workdays (if not a holiday)
+    if (filters.intensive_workday && !events.some(e => e.type === 'holiday')) {
+      const dayType = calendarService.getDayType(date, holidays, config, specialDays);
+      if (dayType === 'WORKDAY_INTENSIVE') {
+        const special = specialDays.find(s => s.date === dateStr);
+        events.push({
+          type: 'intensive' as const,
+          title: special?.description || 'Jornada Intensiva',
+          color: 'bg-orange-100 text-orange-800',
+          data: special || { type: 'intensiva', date: dateStr },
         });
       }
     }
@@ -130,6 +149,7 @@ export function CalendarView() {
   const handleResetFilters = () => {
     setFilters({
       holidays: false,
+      intensive_workday: false,
       vacations: false,
       sickness: false,
       personal: false,
@@ -255,6 +275,10 @@ export function CalendarView() {
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-100 rounded"></div>
               <span className="text-sm text-gray-600">Festivos</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-orange-100 rounded"></div>
+              <span className="text-sm text-gray-600">Jornada Intensiva</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-100 rounded"></div>

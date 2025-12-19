@@ -3,9 +3,9 @@
 Este documento detalla el estado actual del proyecto basado en las especificaciones funcionales (`PROJECT_SPECIFICATIONS.md`) y el análisis del código fuente.
 
 **Leyenda de Estados:**
-- ✅ **[Completado]**: Funcionalidad implementada y aparentemente operativa.
-- ⚠️ **[Bug Crítico]**: Funcionalidad implementada pero con errores graves identificados.
-- 🚧 **[En Progreso]**: Implementación parcial o que requiere revisión.
+- ✅ **[Completado]**: Funcionalidad implementada y operativa.
+- ⚠️ **[Bug Crítico]**: Funcionalidad con errores graves identificados.
+- 🚧 **[En Progreso]**: Implementación parcial.
 - ❌ **[Pendiente]**: Funcionalidad planificada pero no iniciada.
 
 ---
@@ -14,56 +14,56 @@ Este documento detalla el estado actual del proyecto basado en las especificacio
 | Funcionalidad | Estado | Notas |
 | :--- | :---: | :--- |
 | Login (Supabase Auth) | ✅ | Implementado en `AuthContext.tsx`. |
-| Registro Automático de Perfil | ✅ | Se crean perfiles con balance default (22/3 días). |
-| Persistencia de Sesión | ✅ | Gestionado correctamente por el Provider. |
+| Registro Automático | ✅ | Perfiles básicos creados. **Pendiente:** Migrar a nuevo modelo de saldos múltiples. |
+| Persistencia de Sesión | ✅ | Gestionado por Provider. |
 
-## 2. Gestión de Usuarios (Rol: RRHH)
+## 2. Gestión de Usuarios (RRHH)
 | Funcionalidad | Estado | Notas |
 | :--- | :---: | :--- |
-| Crear Usuario | ✅ | Implementado en `UserManagement.tsx`. Incluye creación en Auth y Profile. |
-| Editar Usuario | ✅ | Permite modificar roles, equipos y balances manuales. |
-| Eliminar Usuario | ✅ | Implementado (Borrado de perfil). |
-| Listado y Filtros | ✅ | Tabla de usuarios funcional. |
+| CRUD Usuarios | ✅ | Funcional. Requiere actualización para editar nuevos saldos. |
+| Listado y Filtros | ✅ | Tabla operativa. |
 
-## 3. Gestión de Equipos (Rol: RRHH)
+## 3. Gestión de Equipos
 | Funcionalidad | Estado | Notas |
 | :--- | :---: | :--- |
-| Crear Equipos | ✅ | Implementado en `TeamManagement.tsx`. |
-| Asignar Responsables | ✅ | Funcionalidad básica operativa. |
-| Visualizar Miembros | ✅ | Visible en tablas y detalles. |
+| CRUD Equipos | ✅ | Operativo. |
 
 ## 4. Gestión de Vacaciones (Core)
 | Funcionalidad | Estado | Notas |
 | :--- | :---: | :--- |
-| Solicitar Vacaciones (Formulario) | ✅ | Implementado en `NewRequestModal`. |
-| Validación de Solapamiento | ❌ | **Pendiente.** El sistema permite crear solicitudes en fechas que ya tienen otra solicitud. |
-| Listado de Solicitudes (Manager) | ✅ | Vista de solicitudes pendientes operativa. |
-| Aprobar/Rechazar Solicitud | ⚠️ | **BUG CRÍTICO DETECTADO.** <br>Al aprobar una solicitud, el sistema descuenta los días del balance del **aprobador (Manager)** en lugar del **solicitante (Empleado)**. Ver `useLeaveRequests.ts`. |
-| Calendario Visual | ✅ | `CalendarView` implementado. |
+| Solicitar Vacaciones | ✅ | Formulario básico funcional. |
+| **Validación Solapamiento** | ✅ | **Implementado.** El sistema bloquea fechas duplicadas. |
+| **Corrección Bug Saldos** | ✅ | **Corregido.** Se descuenta correctamente al solicitante. |
+| Regla 17 Días Intensivos | ❌ | **Pendiente.** Lógica de validación estricta por implementar (Fase 4). |
+| Bolsa Asuntos Propios | ❌ | **Pendiente.** Actualmente usa saldo general (Fase 2). |
+| Flujo Bajas Médicas | 🚧 | Requiere cambiar a flujo de "Notificación" sin aprobación (Fase 2). |
 
-## 5. Gestión de Festivos
+## 5. Gestión de Festivos y Calendario
 | Funcionalidad | Estado | Notas |
 | :--- | :---: | :--- |
-| CRUD Festivos | ✅ | Implementado en `HolidayManager`. |
-| Integración en Calendario | ✅ | Los festivos se muestran correctamente. |
+| CRUD Festivos | ✅ | Implementado. |
+| Tipología de Jornada | ❌ | **Pendiente.** Definición de días intensivos vs completos (Fase 1). |
 
 ## 6. Dashboard y Reportes
 | Funcionalidad | Estado | Notas |
 | :--- | :---: | :--- |
-| Dashboard Personal | ✅ | Muestra contadores, accesos rápidos y próximos festivos. |
-| Informe Mensual (Grid) | ✅ | Matriz de asistencia implementada en `MonthlyReport`. |
-| Exportación de Datos | ❌ | Botón existe visualmente pero la lógica de exportación (CSV/PDF) no parece estar completa. |
-
-## 7. Notificaciones
-| Funcionalidad | Estado | Notas |
-| :--- | :---: | :--- |
-| Notificaciones In-App | ✅ | Sistema híbrido (dinámicas + base de datos) operativo. |
-| Emails Transaccionales | ❌ | No implementado. Requiere integración con Supabase Edge Functions o servicio externo. |
+| Dashboard Personal | ✅ | Requiere actualizar widgets con nuevos contadores. |
+| Informe Mensual | ✅ | Matriz operativa. |
 
 ---
 
-## 📋 Resumen de Acciones Inmediatas (Prioridad Alta)
+## 📋 Próximos Pasos (Roadmap de Refactorización)
 
-1.  **CORREGIR BUG DE SALDOS:** Modificar `useLeaveRequests.ts` para que descuente días del `request.user_id` y no de `user.id` (auth user).
-2.  **IMPLEMENTAR VALIDACIÓN DE FECHAS:** Agregar lógica en el backend (o pre-check en frontend) para impedir solicitudes duplicadas en las mismas fechas.
-3.  **AUDITORÍA:** Crear tabla de logs para dejar constancia de quién aprobó una solicitud y cuándo.
+
+
+El desarrollo se centrará en implementar el nuevo modelo de negocio en 4 fases:
+
+
+
+1.  **Fase 1 (Calendario):** Configurar y visualizar "Jornada Intensiva" (Viernes, Verano y Días Sueltos).
+
+2.  **Fase 2 (Tipos):** Separar "Asuntos Propios" y simplificar flujo de "Bajas".
+
+3.  **Fase 3 (Cálculo):** Informar al usuario del consumo de días intensivos/completos.
+
+4.  **Fase 4 (Estricto):** Bloquear solicitudes que violen la regla de los 17 días.

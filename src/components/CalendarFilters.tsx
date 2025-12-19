@@ -14,6 +14,7 @@ interface CalendarFiltersProps {
     personal: boolean;
     maternity: boolean;
     paternity: boolean;
+    intensive_workday: boolean;
   };
   onFilterChange: (filterName: string, value: boolean) => void;
   onResetFilters: () => void;
@@ -22,6 +23,7 @@ interface CalendarFiltersProps {
 export function CalendarFilters({ filters, onFilterChange, onResetFilters }: CalendarFiltersProps) {
   const filterOptions = [
     { key: 'holidays', label: 'Festivos', color: 'bg-blue-100 text-blue-800' },
+    { key: 'intensive_workday', label: 'Jornada Intensiva', color: 'bg-orange-100 text-orange-800' },
     { key: 'vacations', label: 'Vacaciones', color: 'bg-green-100 text-green-800' },
     { key: 'sickness', label: 'Enfermedad', color: 'bg-red-100 text-red-800' },
     { key: 'personal', label: 'Personal', color: 'bg-purple-100 text-purple-800' },
