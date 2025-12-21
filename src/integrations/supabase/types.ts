@@ -221,6 +221,9 @@ export type Database = {
           sick_days_balance: number | null
           team_id: string | null
           vacation_days_balance: number | null
+          personal_days_balance: number | null
+          vacation_full_consumed: number | null
+          vacation_intensive_consumed: number | null
         }
         Insert: {
           created_at?: string | null
@@ -231,6 +234,9 @@ export type Database = {
           sick_days_balance?: number | null
           team_id?: string | null
           vacation_days_balance?: number | null
+          personal_days_balance?: number | null
+          vacation_full_consumed?: number | null
+          vacation_intensive_consumed?: number | null
         }
         Update: {
           created_at?: string | null
@@ -241,6 +247,9 @@ export type Database = {
           sick_days_balance?: number | null
           team_id?: string | null
           vacation_days_balance?: number | null
+          personal_days_balance?: number | null
+          vacation_full_consumed?: number | null
+          vacation_intensive_consumed?: number | null
         }
         Relationships: [
           {

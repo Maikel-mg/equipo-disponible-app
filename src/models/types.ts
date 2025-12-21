@@ -23,7 +23,10 @@ export interface User {
   role: 'empleado' | 'responsable' | 'rrhh';
   team_id?: string;
   vacation_days_balance: number;
+  personal_days_balance: number;
   sick_days_balance: number;
+  vacation_full_consumed: number;
+  vacation_intensive_consumed: number;
   created_at: string;
 }
 
