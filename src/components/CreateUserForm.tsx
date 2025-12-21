@@ -26,6 +26,7 @@ interface CreateUserFormData {
   role: User['role'];
   team_id?: string;
   vacation_days_balance: number;
+  personal_days_balance: number;
   sick_days_balance: number;
 }
 
@@ -45,6 +46,7 @@ export function CreateUserForm({ isOpen, onClose, onSubmit, teams }: CreateUserF
     role: 'empleado',
     team_id: 'no-team',
     vacation_days_balance: 22,
+    personal_days_balance: 3,
     sick_days_balance: 3,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +81,7 @@ export function CreateUserForm({ isOpen, onClose, onSubmit, teams }: CreateUserF
         role: 'empleado',
         team_id: 'no-team',
         vacation_days_balance: 22,
+        personal_days_balance: 3,
         sick_days_balance: 3,
       });
       onClose();
@@ -101,6 +104,7 @@ export function CreateUserForm({ isOpen, onClose, onSubmit, teams }: CreateUserF
       role: 'empleado',
       team_id: 'no-team',
       vacation_days_balance: 22,
+      personal_days_balance: 3,
       sick_days_balance: 3,
     });
     onClose();
@@ -172,9 +176,9 @@ export function CreateUserForm({ isOpen, onClose, onSubmit, teams }: CreateUserF
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="vacation_days">Días de Vacaciones</Label>
+              <Label htmlFor="vacation_days">Vacaciones</Label>
               <Input
                 id="vacation_days"
                 type="number"
@@ -185,7 +189,18 @@ export function CreateUserForm({ isOpen, onClose, onSubmit, teams }: CreateUserF
               />
             </div>
             <div>
-              <Label htmlFor="sick_days">Días de Enfermedad</Label>
+              <Label htmlFor="personal_days">Asuntos Propios</Label>
+              <Input
+                id="personal_days"
+                type="number"
+                value={form.personal_days_balance}
+                onChange={(e) => setForm(prev => ({ ...prev, personal_days_balance: parseInt(e.target.value) }))}
+                min="0"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="sick_days">Enfermedad</Label>
               <Input
                 id="sick_days"
                 type="number"

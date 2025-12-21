@@ -36,35 +36,39 @@ export function Dashboard() {
 
   const recentRequests = requests.slice(0, 3);
 
+  const totalVacation = user?.vacation_days_balance || 22;
+  const fullRemaining = (totalVacation - 17) - (user?.vacation_full_consumed || 0);
+  const intensiveRemaining = 17 - (user?.vacation_intensive_consumed || 0);
+
   const stats = [
     {
-      title: 'Días de vacaciones',
-      value: user?.vacation_days_balance || 0,
+      title: 'Vacaciones (Totales)',
+      value: totalVacation - ((user?.vacation_full_consumed || 0) + (user?.vacation_intensive_consumed || 0)),
       icon: Calendar,
       color: 'blue',
-      subtitle: 'disponibles',
+      subtitle: 'días restantes',
       gradient: 'from-blue-500 to-cyan-500'
     },
     {
-      title: 'Solicitudes pendientes',
-      value: pendingRequests,
-      icon: Clock,
-      color: 'amber',
-      subtitle: 'por revisar',
-      gradient: 'from-amber-500 to-orange-500'
-    },
-    {
-      title: 'Aprobadas este mes',
-      value: approvedThisMonth,
-      icon: CheckCircle,
-      color: 'green',
-      subtitle: 'solicitudes',
-      gradient: 'from-green-500 to-emerald-500'
-    },
-    {
-      title: 'Días de enfermedad',
-      value: user?.sick_days_balance || 0,
+      title: 'Jornada Completa',
+      value: fullRemaining,
       icon: FileText,
+      color: 'indigo',
+      subtitle: 'días restantes',
+      gradient: 'from-indigo-500 to-blue-600'
+    },
+    {
+      title: 'Jornada Intensiva',
+      value: intensiveRemaining,
+      icon: TrendingUp,
+      color: 'orange',
+      subtitle: 'días restantes',
+      gradient: 'from-orange-500 to-amber-500'
+    },
+    {
+      title: 'Asuntos Propios',
+      value: user?.personal_days_balance || 0,
+      icon: Sparkles,
       color: 'purple',
       subtitle: 'disponibles',
       gradient: 'from-purple-500 to-pink-500'

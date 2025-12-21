@@ -23,6 +23,7 @@ interface UserFormData {
   role: User['role'];
   team_id?: string | null;
   vacation_days_balance: number;
+  personal_days_balance: number;
   sick_days_balance: number;
 }
 
@@ -45,6 +46,7 @@ export function UserEditForm({
     role: initialData.role,
     team_id: initialData.team_id || 'no-team',
     vacation_days_balance: initialData.vacation_days_balance,
+    personal_days_balance: initialData.personal_days_balance,
     sick_days_balance: initialData.sick_days_balance,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,6 +65,7 @@ export function UserEditForm({
         role: form.role,
         team_id: form.team_id === 'no-team' ? null : form.team_id,
         vacation_days_balance: form.vacation_days_balance,
+        personal_days_balance: form.personal_days_balance,
         sick_days_balance: form.sick_days_balance,
       };
       console.log('Calling onSubmit with:', submitData);
@@ -130,9 +133,9 @@ export function UserEditForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="vacation_days">Días de Vacaciones</Label>
+            <Label htmlFor="vacation_days">Vacaciones</Label>
             <Input
               id="vacation_days"
               type="number"
@@ -143,7 +146,18 @@ export function UserEditForm({
             />
           </div>
           <div>
-            <Label htmlFor="sick_days">Días de Enfermedad</Label>
+            <Label htmlFor="personal_days">Asuntos Propios</Label>
+            <Input
+              id="personal_days"
+              type="number"
+              value={form.personal_days_balance}
+              onChange={(e) => setForm(prev => ({ ...prev, personal_days_balance: parseInt(e.target.value) }))}
+              min="0"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="sick_days">Enfermedad</Label>
             <Input
               id="sick_days"
               type="number"
