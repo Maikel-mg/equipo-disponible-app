@@ -34,7 +34,7 @@ export function TeamCalendarSection({ team, members, requests }: TeamCalendarSec
     const endDate = new Date(request.end_date);
     
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const dateKey = d.toISOString().split('T')[0];
+      const dateKey = formatDate(d, 'yyyy-MM-dd');
       if (!absencesByDate.has(dateKey)) {
         absencesByDate.set(dateKey, []);
       }
@@ -169,7 +169,7 @@ export function TeamCalendarSection({ team, members, requests }: TeamCalendarSec
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-2xl font-bold text-green-600">
-              {members.length - (absencesByDate.get(today.toISOString().split('T')[0])?.length || 0)}
+              {members.length - (absencesByDate.get(formatDate(today, 'yyyy-MM-dd'))?.length || 0)}
             </p>
             <p className="text-sm text-gray-600">Disponibles Hoy</p>
           </div>

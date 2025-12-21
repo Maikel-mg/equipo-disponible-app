@@ -129,8 +129,8 @@ export function NewRequestModal({ isOpen, onClose }: NewRequestModalProps) {
         user_id: user.id,
         user_name: user.name,
         type: formData.type as any,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
+        start_date: formatDate(startDate, 'yyyy-MM-dd'),
+        end_date: formatDate(endDate, 'yyyy-MM-dd'),
         days_count: daysDifference,
         reason: formData.reason,
       });

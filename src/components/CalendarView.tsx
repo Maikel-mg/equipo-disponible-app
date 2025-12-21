@@ -65,7 +65,7 @@ export function CalendarView() {
   const getEventsForDate = (date: Date) => {
     if (!date) return [];
 
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDate(date, 'yyyy-MM-dd');
     const events = [];
 
     // Check for holidays
@@ -102,10 +102,7 @@ export function CalendarView() {
     );
 
     userRequests.forEach(request => {
-      const startDate = new Date(request.start_date);
-      const endDate = new Date(request.end_date);
-      
-      if (date >= startDate && date <= endDate) {
+      if (dateStr >= request.start_date && dateStr <= request.end_date) {
         const shouldShow = 
           (request.type === 'vacaciones' && filters.vacations) ||
           (request.type === 'enfermedad' && filters.sickness) ||

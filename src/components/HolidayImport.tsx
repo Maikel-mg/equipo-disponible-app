@@ -81,19 +81,19 @@ export function HolidayImport({ isOpen, onClose, onImport, existingHolidays }: H
         let dateString: string;
         
         if (holiday.date instanceof Date) {
-          dateString = holiday.date.toISOString().split('T')[0];
+          dateString = formatDate(holiday.date, 'yyyy-MM-dd');
         } else if (typeof holiday.date === 'string') {
           dateString = holiday.date.split('T')[0];
         } else if (holiday.date && typeof holiday.date === 'object') {
           if (holiday.date.year && holiday.date.month && holiday.date.day) {
             const date = new Date(holiday.date.year, holiday.date.month - 1, holiday.date.day);
-            dateString = date.toISOString().split('T')[0];
+            dateString = formatDate(date, 'yyyy-MM-dd');
           } else {
-            dateString = new Date(holiday.date).toISOString().split('T')[0];
+            dateString = formatDate(new Date(holiday.date), 'yyyy-MM-dd');
           }
         } else {
           console.warn('Unknown date format:', holiday.date);
-          dateString = new Date().toISOString().split('T')[0]; // Fallback to today
+          dateString = formatDate(new Date(), 'yyyy-MM-dd'); // Fallback to today
         }
 
         const exists = existingHolidays.some(existing => {
