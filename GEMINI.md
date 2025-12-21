@@ -59,3 +59,5 @@ The application is structured as a single-page application (SPA). The frontend i
 *   **Semantic Code (DDD-lite):** Code should describe the *business intent* (what it does), not just the implementation (how it does it).
     *   Avoid raw DB calls in main business logic flows. Extract them to helper functions with descriptive names (e.g., `getUserVacationBalance` instead of a raw `select`).
     *   Use specific types/interfaces for inputs and outputs.
+*   **Planning and Progress:** Every major task or phase must be detailed in a `plan.md` file at the root before starting. Tasks in this file should be marked as they are completed to maintain a clear state of progress.
+*   **Always Add Tests:** Every code modification, new feature, or bug fix MUST be accompanied by corresponding tests (unit or component tests) to ensure business rules are maintained and documented.

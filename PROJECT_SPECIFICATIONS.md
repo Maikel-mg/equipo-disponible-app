@@ -30,13 +30,13 @@ El sistema define tres niveles de acceso, gestionados a través de la tabla `pro
     *   El sistema gestiona múltiples bolsas de días con reinicio anual (1 de Enero):
         1.  **Vacaciones Totales:** Cantidad base (ej. 22 o 23 días laborables).
         2.  **Sub-límite Jornada Intensiva:** De las vacaciones totales, **exactamente 17 días** deben consumirse en días designados como "Jornada Intensiva" (Viernes y Verano). El resto se disfrutan en Jornada Completa.
-        3.  **Asuntos Propios:** Bolsa independiente (ej. 2 o 3 días) a libre disposición.
+        3.  **Asuntos Propios:** Bolsa independiente (**3 días por defecto**) a libre disposición.
         4.  **Balance Año Anterior:** Días de vacaciones no disfrutados el año previo, disponibles para gastar.
 *   **Sesión:** Persistencia de sesión gestionada por `AuthProvider`.
 
 ### 3.2. Gestión de Usuarios (`UserManagement`)
 *   **Alcance:** Exclusivo para rol `rrhh`.
-*   **CRUD de Usuarios:** Alta, Baja y Modificación de usuarios, roles, equipos y saldos iniciales.
+*   **CRUD de Usuarios:** Alta, Baja y Modificación de usuarios, roles, equipos y saldos iniciales (Vacaciones y Asuntos Propios).
 *   **Listado:** Tabla con filtrado y paginación.
 
 ### 3.3. Gestión de Equipos (`TeamManagement`)
@@ -50,11 +50,12 @@ El sistema define tres niveles de acceso, gestionados a través de la tabla `pro
         *   **Validación Estricta:** El sistema valida contra el calendario laboral. Impide solicitar más días de "Jornada Completa" de los disponibles (Total - 17). Obliga a consumir 17 días en periodo de jornada intensiva.
     *   **Asuntos Propios:**
         *   Requieren aprobación.
-        *   Se descuentan de su propia bolsa independiente.
+        *   Se descuentan de su propia bolsa independiente (`personal_days_balance`).
     *   **Baja Médica (Enfermedad):**
-        *   **No requiere aprobación** (Flujo de Notificación).
-        *   El empleado registra la baja y el sistema notifica al responsable.
+        *   **Auto-aprobación:** La solicitud se crea automáticamente con estado `aprobada`.
+        *   Se registra en el calendario y se notifica al responsable.
         *   No consume saldo de vacaciones ni asuntos propios.
+        *   *(Mejora Futura: Flujo de validación de justificante médico por RRHH).*
 *   **Validaciones Generales:**
     *   Comprobación de solapamiento de fechas (Ya implementado).
     *   Comprobación de saldo suficiente según el tipo de día y bolsa.

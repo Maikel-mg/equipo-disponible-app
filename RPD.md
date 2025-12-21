@@ -60,10 +60,12 @@ El desarrollo se centrará en implementar el nuevo modelo de negocio en 4 fases:
 
 
 
-1.  **Fase 1 (Calendario):** Configurar y visualizar "Jornada Intensiva" (Viernes, Verano y Días Sueltos).
+1.  **Fase 1 (Calendario):** ✅ Configurar y visualizar "Jornada Intensiva" (Viernes, Verano y Días Sueltos).
 
-2.  **Fase 2 (Tipos):** Separar "Asuntos Propios" y simplificar flujo de "Bajas".
+2.  **Fase 2 (Tipos):** 🚧 Separar "Asuntos Propios" (3 días) y auto-aprobar "Bajas".
 
 3.  **Fase 3 (Cálculo):** Informar al usuario del consumo de días intensivos/completos.
 
 4.  **Fase 4 (Estricto):** Bloquear solicitudes que violen la regla de los 17 días.
+
+

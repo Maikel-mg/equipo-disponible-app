@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
-import { LeaveRequest } from '@/models/types';
+import { LeaveRequest, User } from '@/models/types';
 import { LEAVE_STATUS, APP_ERRORS } from '@/config/constants';
+import { calendarService } from './calendarService';
 
 // --- Private Helper Functions (Data Access Layer) ---
 
@@ -23,34 +24,55 @@ const updateRequestStatusInDb = async (
 };
 
 /**
- * Retrieves the current vacation days balance for a specific user.
+ * Retrieves the full profile for a specific user to check balances and counters.
  */
-const getUserVacationBalance = async (userId: string): Promise<number> => {
+const getUserProfile = async (userId: string): Promise<User> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('vacation_days_balance')
+    .select('*')
     .eq('id', userId)
     .single();
 
   if (error) {
-    console.error(`Error fetching vacation balance for user ${userId}:`, error);
+    console.error(`Error fetching profile for user ${userId}:`, error);
     throw error;
   }
   
-  return data?.vacation_days_balance ?? 0;
+  return data as User;
 };
 
 /**
- * Updates the vacation days balance for a specific user.
+ * Updates the vacation consumption counters for a specific user.
  */
-const updateUserVacationBalance = async (userId: string, newBalance: number): Promise<void> => {
+const updateUserConsumption = async (
+  userId: string, 
+  data: { 
+    vacation_full_consumed: number, 
+    vacation_intensive_consumed: number 
+  }
+): Promise<void> => {
   const { error } = await supabase
     .from('profiles')
-    .update({ vacation_days_balance: newBalance })
+    .update(data)
     .eq('id', userId);
 
   if (error) {
-    console.error(`Error updating vacation balance for user ${userId}:`, error);
+    console.error(`Error updating consumption for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Updates the personal days balance for a specific user.
+ */
+const updateUserPersonalBalance = async (userId: string, newBalance: number): Promise<void> => {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ personal_days_balance: newBalance })
+    .eq('id', userId);
+
+  if (error) {
+    console.error(`Error updating personal balance for user ${userId}:`, error);
     throw error;
   }
 };
@@ -60,12 +82,11 @@ const updateUserVacationBalance = async (userId: string, newBalance: number): Pr
  * Returns true if an overlap exists.
  */
 const checkRequestOverlap = async (userId: string, startDate: string, endDate: string): Promise<boolean> => {
-  // Logic: (StartA <= EndB) and (EndA >= StartB)
   const { data, error } = await supabase
     .from('leave_requests')
     .select('id')
     .eq('user_id', userId)
-    .neq('status', LEAVE_STATUS.REJECTED) // Ignore rejected requests
+    .neq('status', LEAVE_STATUS.REJECTED)
     .lte('start_date', endDate)
     .gte('end_date', startDate);
 
@@ -91,7 +112,6 @@ export const leaveService = {
   },
 
   createRequest: async (requestData: Omit<LeaveRequest, 'id' | 'created_at' | 'status'>) => {
-    // 1. Validation: Check for overlapping requests
     const hasOverlap = await checkRequestOverlap(
       requestData.user_id, 
       requestData.start_date, 
@@ -102,10 +122,45 @@ export const leaveService = {
       throw new Error(APP_ERRORS.OVERLAPPING_REQUEST);
     }
 
-    // 2. Persist request
+    const profile = await getUserProfile(requestData.user_id);
+    const status = requestData.type === 'enfermedad' ? LEAVE_STATUS.APPROVED : LEAVE_STATUS.PENDING;
+
+    if (requestData.type === 'personal') {
+      if (profile.personal_days_balance < requestData.days_count) {
+        throw new Error('INSUFFICIENT_PERSONAL_BALANCE');
+      }
+    }
+
+    if (requestData.type === 'vacaciones') {
+      const year = new Date(requestData.start_date).getFullYear();
+      const { holidays, config, specialDays } = await calendarService.getCalendarData(year);
+      
+      const breakdown = calendarService.calculateDayTypeBreakdown(
+        new Date(requestData.start_date),
+        new Date(requestData.end_date),
+        holidays,
+        config,
+        specialDays
+      );
+
+      const totalConsumed = (profile.vacation_full_consumed || 0) + (profile.vacation_intensive_consumed || 0);
+      const totalAvailable = profile.vacation_days_balance || 0;
+      
+      if (totalConsumed + breakdown.total_workdays > totalAvailable) {
+        throw new Error('INSUFFICIENT_VACATION_BALANCE');
+      }
+
+      const maxFullDays = totalAvailable - 17;
+      const currentFullConsumed = profile.vacation_full_consumed || 0;
+      
+      if (currentFullConsumed + breakdown.WORKDAY_FULL > maxFullDays) {
+        throw new Error('EXCEEDED_FULL_WORKDAY_LIMIT');
+      }
+    }
+
     const { data, error } = await supabase
       .from('leave_requests')
-      .insert([requestData])
+      .insert([{ ...requestData, status }])
       .select()
       .single();
     
@@ -113,10 +168,6 @@ export const leaveService = {
     return data;
   },
 
-  /**
-   * Processes a review for a leave request.
-   * If approved, it automatically handles the deduction of vacation days.
-   */
   updateRequest: async ({ 
     requestId, 
     status, 
@@ -128,7 +179,6 @@ export const leaveService = {
     comments?: string;
     reviewerId?: string;
   }) => {
-    // 1. Prepare update payload
     const updatePayload: Partial<LeaveRequest> = {
       status,
       reviewed_at: new Date().toISOString(),
@@ -139,22 +189,32 @@ export const leaveService = {
       updatePayload.review_comments = comments;
     }
 
-    // 2. Persist status change
     const updatedRequest = await updateRequestStatusInDb(requestId, updatePayload);
-
-    // 3. Execute Business Rules (Side Effects)
-    const isVacationRequest = updatedRequest.type === 'vacaciones';
     const isApproved = status === LEAVE_STATUS.APPROVED;
 
-    if (isApproved && isVacationRequest) {
+    if (isApproved) {
       try {
-        const currentBalance = await getUserVacationBalance(updatedRequest.user_id);
-        const newBalance = currentBalance - updatedRequest.days_count;
-        
-        await updateUserVacationBalance(updatedRequest.user_id, newBalance);
+        const profile = await getUserProfile(updatedRequest.user_id);
+
+        if (updatedRequest.type === 'vacaciones') {
+          const year = new Date(updatedRequest.start_date).getFullYear();
+          const { holidays, config, specialDays } = await calendarService.getCalendarData(year);
+          const breakdown = calendarService.calculateDayTypeBreakdown(
+            new Date(updatedRequest.start_date),
+            new Date(updatedRequest.end_date),
+            holidays,
+            config,
+            specialDays
+          );
+
+          await updateUserConsumption(updatedRequest.user_id, {
+            vacation_full_consumed: (profile.vacation_full_consumed || 0) + breakdown.WORKDAY_FULL,
+            vacation_intensive_consumed: (profile.vacation_intensive_consumed || 0) + breakdown.WORKDAY_INTENSIVE
+          });
+        } else if (updatedRequest.type === 'personal') {
+          await updateUserPersonalBalance(updatedRequest.user_id, (profile.personal_days_balance || 0) - updatedRequest.days_count);
+        }
       } catch (error) {
-        // Critical error: Request approved but balance not updated.
-        // In a real system, we might want to rollback the approval here or alert admin.
         console.error('CRITICAL: Failed to update user balance after approval', error);
         throw error;
       }
