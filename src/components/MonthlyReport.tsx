@@ -1,8 +1,10 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useUsers } from '@/hooks/useUsers';
+import { useHolidays } from '@/hooks/useHolidays';
+import { useCalendarConfig } from '@/hooks/useCalendarConfig';
+import { calendarService } from '@/services/calendarService';
 import { formatDate } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react';
 import { 
@@ -18,7 +20,10 @@ export function MonthlyReport() {
   const { user } = useAuth();
   const { requests } = useLeaveRequests();
   const { users } = useUsers();
+  const { holidays } = useHolidays();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const year = currentDate.getFullYear();
+  const { config, specialDays } = useCalendarConfig(year);
 
   // Solo mostrar si es responsable o RRHH
   if (!user || (user.role !== 'responsable' && user.role !== 'rrhh')) {
@@ -29,7 +34,6 @@ export function MonthlyReport() {
     );
   }
 
-  const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
@@ -39,32 +43,35 @@ export function MonthlyReport() {
     ? users.filter(u => u.team_id === user.team_id)
     : users;
 
+  const monthStartStr = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
+  const monthEndStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth.toString().padStart(2, '0')}`;
+
   // Filtrar solicitudes del mes actual
   const monthRequests = requests.filter(request => {
-    const startDate = new Date(request.start_date);
-    const endDate = new Date(request.end_date);
-    return (startDate.getFullYear() === year && startDate.getMonth() === month) ||
-           (endDate.getFullYear() === year && endDate.getMonth() === month) ||
-           (startDate <= new Date(year, month, 1) && endDate >= new Date(year, month + 1, 0));
+    return request.start_date <= monthEndStr && request.end_date >= monthStartStr;
   });
 
   // Función para verificar si un usuario tiene ausencia en un día específico
   const hasLeaveOnDay = (userId: string, day: number) => {
-    const targetDate = new Date(year, month, day);
+    const targetDateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
     return monthRequests.find(request => {
       if (request.user_id !== userId || request.status !== 'aprobada') return false;
-      const startDate = new Date(request.start_date);
-      const endDate = new Date(request.end_date);
-      return targetDate >= startDate && targetDate <= endDate;
+      return targetDateStr >= request.start_date && targetDateStr <= request.end_date;
     });
   };
 
-  // Función para obtener el tipo de ausencia
-  const getLeaveType = (userId: string, day: number) => {
+  // Función para obtener el tipo de ausencia y si es jornada intensiva
+  const getLeaveDetails = (userId: string, day: number) => {
     const leave = hasLeaveOnDay(userId, day);
     if (!leave) return null;
     
-    const typeMap = {
+    // Obtener el tipo de jornada para este día específico
+    const date = new Date(year, month, day);
+    const dayType = calendarService.getDayType(date, holidays, config, specialDays);
+    const isIntensive = dayType === 'WORKDAY_INTENSIVE';
+
+    const typeMap: Record<string, string> = {
       'vacaciones': 'V',
       'enfermedad': 'E',
       'personal': 'P',
@@ -72,43 +79,84 @@ export function MonthlyReport() {
       'paternidad': 'PT'
     };
     
-    return typeMap[leave.type] || 'X';
+    return {
+      code: typeMap[leave.type] || 'X',
+      isIntensive,
+      type: leave.type
+    };
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    if (direction === 'prev') {
-      newDate.setMonth(month - 1);
-    } else {
-      newDate.setMonth(month + 1);
-    }
-    setCurrentDate(newDate);
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
   };
 
   const getDayOfWeek = (day: number) => {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
+    // Usar Date.UTC para asegurar que el día de la semana sea correcto independientemente de la hora local
+    const date = new Date(Date.UTC(year, month, day));
+    const dayOfWeek = date.getUTCDay();
     return dayOfWeek === 0 || dayOfWeek === 6; // 0 = domingo, 6 = sábado
+  };
+  
+  const isHoliday = (day: number) => {
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    return holidays.some(h => h.date === dateStr);
   };
 
   const getTotalDaysOff = (userId: string) => {
-    return monthRequests
-      .filter(req => req.user_id === userId && req.status === 'aprobada')
-      .reduce((total, req) => {
-        const startDate = new Date(req.start_date);
-        const endDate = new Date(req.end_date);
-        const monthStart = new Date(year, month, 1);
-        const monthEnd = new Date(year, month + 1, 0);
+    let count = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const leave = hasLeaveOnDay(userId, d);
+      if (leave) {
+        const isWeekend = getDayOfWeek(d);
+        const isFestivo = isHoliday(d);
         
-        const overlapStart = new Date(Math.max(startDate.getTime(), monthStart.getTime()));
-        const overlapEnd = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
-        
-        if (overlapStart <= overlapEnd) {
-          const days = Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          return total + days;
+        // Si es vacaciones, descontar fines de semana y festivos
+        if (!isWeekend && !isFestivo) {
+          count++;
         }
-        return total;
-      }, 0);
+      }
+    }
+    return count;
+  };
+
+  // Helper para generar las clases de color
+  const getCellStyles = (leaveDetails: { code: string; isIntensive: boolean; type: string } | null, isWeekend: boolean) => {
+    if (isWeekend) return 'bg-gray-100 text-gray-400';
+    if (!leaveDetails) return 'hover:bg-gray-50';
+
+    const baseStyles = 'font-semibold border';
+    
+    // Vacaciones: Verde oscuro para completa, verde claro para intensiva
+    if (leaveDetails.type === 'vacaciones') {
+      return leaveDetails.isIntensive 
+        ? `${baseStyles} bg-green-50 text-green-700 border-green-200`
+        : `${baseStyles} bg-green-100 text-green-800 border-green-200`;
+    }
+
+    // Enfermedad: Rojo
+    if (leaveDetails.type === 'enfermedad') {
+       return `${baseStyles} bg-red-100 text-red-800 border-red-200`;
+    }
+
+    // Personal: Morado
+    if (leaveDetails.type === 'personal') {
+       return `${baseStyles} bg-purple-100 text-purple-800 border-purple-200`;
+    }
+
+    // Maternidad/Paternidad: Rosa/Azul
+    if (leaveDetails.type === 'maternidad' || leaveDetails.type === 'paternidad') {
+       return `${baseStyles} bg-blue-100 text-blue-800 border-blue-200`;
+    }
+
+    return 'bg-gray-50';
   };
 
   return (
@@ -186,18 +234,13 @@ export function MonthlyReport() {
                   {Array.from({ length: daysInMonth }, (_, i) => {
                     const day = i + 1;
                     const isWeekend = getDayOfWeek(day);
-                    const leaveType = getLeaveType(teamUser.id, day);
+                    const leaveDetails = getLeaveDetails(teamUser.id, day);
+                    const styles = getCellStyles(leaveDetails, isWeekend);
                     
                     return (
                       <TableCell key={day} className="text-center p-1">
-                        <div className={`w-8 h-8 flex items-center justify-center text-xs rounded ${
-                          isWeekend 
-                            ? 'bg-gray-100 text-gray-400' 
-                            : leaveType
-                            ? 'bg-red-100 text-red-800 font-semibold'
-                            : 'hover:bg-gray-50'
-                        }`}>
-                          {leaveType || (isWeekend ? '·' : '')}
+                        <div className={`w-8 h-8 flex items-center justify-center text-xs rounded ${styles}`}>
+                          {leaveDetails?.code || (isWeekend ? '·' : '')}
                         </div>
                       </TableCell>
                     );
@@ -217,24 +260,24 @@ export function MonthlyReport() {
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Leyenda</h4>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-100 border border-red-200 rounded flex items-center justify-center text-red-800 font-semibold">V</div>
-            <span>Vacaciones</span>
+            <div className="w-4 h-4 bg-green-100 border border-green-200 rounded flex items-center justify-center text-green-800 font-semibold">V</div>
+            <span>Vacaciones (J. Completa)</span>
+          </div>
+           <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-green-50 border border-green-200 rounded flex items-center justify-center text-green-700 font-semibold">V</div>
+            <span>Vacaciones (J. Intensiva)</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-red-100 border border-red-200 rounded flex items-center justify-center text-red-800 font-semibold">E</div>
             <span>Enfermedad</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-100 border border-red-200 rounded flex items-center justify-center text-red-800 font-semibold">P</div>
+            <div className="w-4 h-4 bg-purple-100 border border-purple-200 rounded flex items-center justify-center text-purple-800 font-semibold">P</div>
             <span>Personal</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-100 border border-red-200 rounded flex items-center justify-center text-red-800 font-semibold">M</div>
-            <span>Maternidad</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-100 border border-red-200 rounded flex items-center justify-center text-red-800 font-semibold">PT</div>
-            <span>Paternidad</span>
+            <div className="w-4 h-4 bg-blue-100 border border-blue-200 rounded flex items-center justify-center text-blue-800 font-semibold">M</div>
+            <span>Maternidad/Paternidad</span>
           </div>
         </div>
       </div>
