@@ -37,7 +37,7 @@ export function CalendarView() {
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
-  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -45,7 +45,10 @@ export function CalendarView() {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+    
+    // Adjust starting day to Monday (0 for Monday, 6 for Sunday)
+    const day = firstDay.getDay();
+    const startingDayOfWeek = day === 0 ? 6 : day - 1;
 
     const days = [];
 
